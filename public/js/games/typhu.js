@@ -38,7 +38,9 @@
   let prevOwned = null;
   let lastPhase = null;
   let lastCardId = null;
+  let prevState = null;
   const STEP_MS = 160;
+  const ROLL_MS = 1100;
 
   // ---------------- Chi tiết ô đất ----------------
   function ensureModal() {
@@ -171,7 +173,6 @@
       const old = prevOwned.split(',');
       if (s.board.some((q, i) => q.owner && old[i] === '')) setTimeout(() => UI.sfx('buy'), 120);
     }
-    if (lastPhase && lastPhase !== 'ended' && s.phase === 'ended') UI.sfx('win');
     const newCard = s.card && s.card.id + s.card.text !== lastCardId;
     if (newCard && lastCardId !== null) setTimeout(() => UI.sfx('card'), 700);
 
@@ -197,7 +198,7 @@
       <div class="cp-kind">${s.card.kind === 'Cơ Hội' ? '❓' : '🍀'} ${UI.esc(s.card.kind)}</div>
       <div class="cp-text">${UI.esc(s.card.text)}</div><div class="cp-who">— ${UI.esc(s.card.player)}</div></div>` : '';
     const overlay = `<div class="tp-overlay">
-      <div class="tp-dice" data-key="dice">${UI.diceHTML(s.dice ? s.dice[0] : 5, '', 'd1')}${UI.diceHTML(s.dice ? s.dice[1] : 6, '', 'd2')}</div>
+      <div class="tp-dice" data-key="dice">${FX.diceHTML(s.dice ? s.dice[0] : 5, 'd1')}${FX.diceHTML(s.dice ? s.dice[1] : 6, 'd2')}</div>
       ${s.dice && s.dice[0] === s.dice[1] ? `<div class="double-badge" data-key="dbl-${s.rollId}">ĐÔI!</div>` : ''}
       ${cardPopup}
     </div>`;
@@ -269,13 +270,11 @@
     const d1 = root.querySelector('[data-key="d1"]');
     const d2 = root.querySelector('[data-key="d2"]');
     if (rolled && s.dice) {
-      [d1, d2].forEach((d, k) => {
-        d.dataset.rolling = '1';
-        UI.tumble(d, s.dice[k], 600 + k * 90);
-        setTimeout(() => { delete d.dataset.rolling; d.dataset.shown = String(s.dice[k]); }, 760);
-      });
-      delay = 720;
-    } else UI.syncDice(root);
+      FX.rollDie(d1, s.dice[0], { duration: ROLL_MS });
+      FX.rollDie(d2, s.dice[1], { duration: ROLL_MS, delay: 90 });
+      delay = ROLL_MS + 120;
+    } else FX.syncDice(root);
+    let walkEnd = delay;
 
     if (prevPos && !UI.reducedMotion) {
       s.players.forEach((p) => {
@@ -295,6 +294,7 @@
           else for (let k = 0; k <= 32 - fwd; k++) path.push((b.pos - k + 32) % 32);
         }
         const step = Math.min(STEP_MS, 2600 / path.length);
+        walkEnd = Math.max(walkEnd, delay + step * (path.length - 1));
         const frames = path.map((i) => { const c = squareCenter(i); return { left: `${c.x + offL}%`, top: `${c.y + offT}%` }; });
         frames[frames.length - 1] = { left: endL, top: endT };
         pawn.getAnimations().forEach((a) => a.cancel());
@@ -306,6 +306,41 @@
       });
     }
 
+    // ---- Xu bay giữa người chơi / ngân hàng, và các banner sự kiện ----
+    if (prevMoney && prevState) {
+      const pill = (id) => root.querySelector(`[data-pill="${id}"]`);
+      const bank = root.querySelector('.tp-dice');
+      const diffs = s.players.map((p) => ({ p, d: p.money - (prevMoney[p.id] ?? p.money) })).filter((x) => x.d);
+      const losers = diffs.filter((x) => x.d < 0);
+      const gainers = diffs.filter((x) => x.d > 0);
+      const used = new Set();
+      losers.forEach((l) => {
+        const g = gainers.find((x) => !used.has(x.p.id) && x.d === -l.d);
+        if (g) { used.add(g.p.id); FX.coins(pill(l.p.id), pill(g.p.id), { delay: walkEnd + 150, count: 6 }); }
+        else FX.coins(pill(l.p.id), bank, { delay: walkEnd + 150, count: 4 });
+      });
+      gainers.filter((g) => !used.has(g.p.id)).forEach((g) => FX.coins(bank, pill(g.p.id), { delay: walkEnd + 150, count: 4 }));
+      // Mua đất / xây nhà: lấp lánh trên ô
+      s.board.forEach((q, i) => {
+        const old = prevState.board[i];
+        if ((q.owner && !old.owner) || q.houses > old.houses) {
+          setTimeout(() => FX.sparkle(root.querySelector(`[data-sq="${i}"]`), 12), q.houses > old.houses ? 100 : walkEnd);
+          if (q.houses > old.houses) UI.sfx('coin');
+        }
+      });
+      s.players.forEach((p) => {
+        const o = prevState.players.find((x) => x.id === p.id);
+        if (!o) return;
+        if (p.inJail && !o.inJail) setTimeout(() => { FX.banner('VÀO TÙ!', { kind: 'red', sub: UI.esc(p.name), duration: 1400 }); UI.sfx('bad'); }, walkEnd);
+        if (p.bankrupt && !o.bankrupt) { FX.banner('PHÁ SẢN', { kind: 'red', sub: UI.esc(p.name), duration: 1800 }); UI.sfx('boom'); }
+      });
+      if (prevState.phase !== 'ended' && s.phase === 'ended') {
+        const w = s.players.find((p) => p.id === s.winner);
+        setTimeout(() => { FX.banner('TỶ PHÚ!', { sub: UI.esc(w.name), duration: 2800 }); FX.confetti(); UI.sfx('fanfare'); }, walkEnd);
+      }
+    }
+    prevState = { board: s.board.map((q) => ({ owner: q.owner, houses: q.houses })), players: s.players.map((p) => ({ id: p.id, inJail: p.inJail, bankrupt: p.bankrupt })), phase: s.phase };
+
     // Tiền tăng / giảm bay lên
     if (prevMoney) {
       s.players.forEach((p) => {
@@ -316,8 +351,10 @@
         const f = document.createElement('div');
         f.className = 'money-float ' + (diff > 0 ? 'up' : 'down');
         f.textContent = (diff > 0 ? '+' : '') + UI.money(diff);
+        f.style.animationDelay = `${walkEnd + 500}ms`;
+        f.style.opacity = '0';
         pill.appendChild(f);
-        setTimeout(() => f.remove(), 1600);
+        setTimeout(() => f.remove(), walkEnd + 2200);
       });
     }
 

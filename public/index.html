@@ -3,19 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1f3b2d">
+  <meta name="theme-color" content="#0b0f14">
   <title>Vui Cuối Tuần</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,700&display=swap&subset=vietnamese">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <div class="bg-deco" aria-hidden="true"><i>♠</i><i>♥</i><i>♦</i><i>♣</i><i>♠</i><i>♥</i><i>♦</i><i>♣</i></div>
   <!-- ============ TRANG CHỦ ============ -->
   <section id="screen-home" class="screen">
     <div class="home-wrap">
       <header class="brand">
-        <div class="brand-icons">🃏 🐴 🏠 ♠️</div>
+        <div class="brand-suits"><span>♠</span><span class="r">♥</span><span class="crest">VCT</span><span class="r">♦</span><span>♣</span></div>
         <h1>Vui Cuối Tuần</h1>
-        <p class="tagline">Chơi game cùng bạn bè trong cùng mạng Wi-Fi</p>
+        <p class="tagline"><span>Sòng bài gia đình</span> · chơi cùng bạn bè chung Wi-Fi</p>
       </header>
 
       <div class="card-panel">
@@ -32,7 +36,7 @@
 
         <h2 class="panel-title">Tạo phòng mới</h2>
         <div id="game-picker" class="game-picker"></div>
-        <button id="btn-create" class="btn btn-primary btn-big">Tạo phòng</button>
+        <button id="btn-create" class="btn btn-primary btn-big">♠ Mở bàn chơi</button>
 
         <div class="divider"><span>hoặc</span></div>
 
@@ -147,6 +151,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/avatar.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/fx.js"></script>
   <script src="/js/games/tienlen.js"></script>
   <script src="/js/games/poker.js"></script>
   <script src="/js/games/cangua.js"></script>

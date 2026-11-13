@@ -61,7 +61,9 @@ Màn hình sẽ in ra địa chỉ, ví dụ:
 - 📳 Rung và chuông báo khi tới lượt (có nút 🔊 để tắt âm thanh).
 - 🧑‍🎨 Tạo hình nhân vật riêng, đổi được cả khi đang ở trong phòng.
 - 🏙️ Cờ Tỷ Phú có bàn cờ 3D: nhà và khách sạn đứng nổi trên đất, quân cờ là nhân vật đi từng ô, tiền thay đổi hiện số bay lên, thẻ Cơ Hội lật ra giữa bàn.
-- ✨ Lá bài bay, xúc xắc lăn, ngựa và quân cờ đi từng ô. Nếu thiết bị bật chế độ giảm chuyển động thì animation tự tắt.
+- 🎰 Phong cách sòng bài sang trọng: nền tối, vàng kim, bàn nỉ oval có người chơi ngồi quanh, chip và lá bài chi tiết.
+- ✨ Chia bài bay từ giữa bàn, bài trên tay xòe hình quạt, chip cược bay vào pot rồi về người thắng, xúc xắc 3D lăn thật, xu vàng bay khi trả tiền thuê. Có banner "CHẶT!", "ALL-IN!", "ĐÁ NGỰA!", và pháo giấy khi thắng.
+- ✨ Ngựa và quân cờ đi từng ô. Nếu thiết bị bật chế độ giảm chuyển động thì animation tự tắt.
 - 📱 Giao diện tối ưu cho điện thoại.
 
 ## Cấu trúc
@@ -75,7 +77,8 @@ server/
 public/
   index.html  css/style.css
   js/avatar.js      Vẽ nhân vật bằng SVG từ vài con số cấu hình
-  js/ui.js          Tiện ích giao diện: cập nhật DOM mượt, animation, xúc xắc, âm thanh
+  js/ui.js          Tiện ích giao diện: cập nhật DOM mượt, lá bài, âm thanh
+  js/fx.js          Hiệu ứng: xúc xắc 3D, vật bay theo vòng cung, chip, xu, pháo giấy, banner
   js/app.js         Sảnh, phòng chờ, chat
   js/games/         Giao diện từng game
 docs/luat-choi/     Luật chơi chi tiết (Markdown)

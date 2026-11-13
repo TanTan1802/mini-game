@@ -99,8 +99,8 @@
 
   function pickerHTML(current, disabled) {
     return GAME_ORDER.map((id) => `
-      <button class="game-option ${id === current ? 'active' : ''}" data-game="${id}" ${disabled ? 'disabled' : ''}>
-        <span class="go-icon">${GAME_INFO[id].icon}</span>
+      <button class="game-option g-${id} ${id === current ? 'active' : ''}" data-game="${id}" ${disabled ? 'disabled' : ''}>
+        <span class="go-table"><span class="go-icon">${GAME_INFO[id].icon}</span></span>
         <span class="go-name">${GAME_NAMES[id]}</span>
         <span class="go-desc">${GAME_INFO[id].desc}</span>
       </button>`).join('');

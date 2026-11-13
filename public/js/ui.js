@@ -15,14 +15,19 @@ const UI = {
     if (opts.selected) cls.push('selected');
     if (opts.highlight) cls.push('highlight');
     if (opts.clickable) cls.push('clickable');
-    const extra = (opts.key ? ` data-key="${opts.key}"` : '') + (opts.flip ? ` data-flip="${opts.flip}"` : '') + (opts.from ? ` data-flip-from="${opts.from}"` : '');
+    const extra = (opts.key ? ` data-key="${opts.key}"` : '') + (opts.flip ? ` data-flip="${opts.flip}"` : '') + (opts.from ? ` data-flip-from="${opts.from}"` : '')
+      + (opts.arc !== undefined ? ` data-flip-arc="${opts.arc}"` : '') + (opts.delay ? ` data-flip-delay="${opts.delay}"` : '') + (opts.style ? ` style="${opts.style}"` : '');
     if (opts.back || !card) return `<div class="${cls.join(' ')} back"${extra}></div>`;
     const rank = card.slice(0, -1);
     const suit = card.slice(-1);
     const red = suit === 'H' || suit === 'D';
     const sym = UI.SUIT_SYMBOL[suit];
+    const face = ['J', 'Q', 'K'].includes(rank);
+    const center = face
+      ? `<span class="c-face"><b>${rank}</b><i>${sym}</i></span>`
+      : rank === 'A' ? `<span class="c-ace">${sym}</span>` : `<span class="c-big">${sym}</span>`;
     return `<div class="${cls.join(' ')} ${red ? 'red' : 'black'}" data-card="${card}"${extra}>
-      <span class="c-rank">${rank}</span><span class="c-suit">${sym}</span><span class="c-big">${sym}</span>
+      <span class="c-idx"><b>${rank}</b><i>${sym}</i></span>${center}<span class="c-idx br"><b>${rank}</b><i>${sym}</i></span>
     </div>`;
   },
 
@@ -81,6 +86,15 @@ const UI = {
     return `<div class="game-log">${log.slice().reverse().map((l) => `<div>${UI.esc(l)}</div>`).join('')}</div>`;
   },
 
+  /** Vị trí ghế thứ k (0 = mình, ở dưới cùng) trong n ghế quanh bàn oval, tính theo % */
+  seatPos(k, n) {
+    const ang = ((90 + (k * 360) / n) * Math.PI) / 180;
+    const x = 50 + 45 * Math.cos(ang);
+    const y = 50 + 44 * Math.sin(ang);
+    return { x: Math.min(91, Math.max(9, x)), y: Math.min(92, Math.max(9, y)) };
+  },
+  lerp(a, b, t) { return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }; },
+
   /** Rung nhẹ trên điện thoại khi tới lượt */
   buzz() { try { navigator.vibrate && navigator.vibrate(120); } catch (e) { /* bỏ qua */ } },
 
@@ -91,26 +105,41 @@ const UI = {
   // Phần tử có data-key được ghép theo khoá; phần tử có data-flip được trượt từ vị trí cũ tới vị trí mới.
   render(root, html) {
     const before = new Map();
-    if (!UI.reducedMotion) root.querySelectorAll('[data-flip]').forEach((el) => before.set(el.dataset.flip, UI.layoutRect(el)));
+    // Lá trong quạt bài được đặt bằng transform → lấy vị trí thật (kể cả transform)
+    if (!UI.reducedMotion) root.querySelectorAll('[data-flip]').forEach((el) => before.set(el.dataset.flip, el.closest('.hand-fan') ? el.getBoundingClientRect() : UI.layoutRect(el)));
     const tpl = document.createElement('template');
     tpl.innerHTML = html;
     UI.morphChildren(root, tpl.content);
     if (UI.reducedMotion) return;
     root.querySelectorAll('[data-flip]').forEach((el) => {
+      if (el.closest('.hand-fan')) return; // bài trên tay tự trượt bằng CSS transition
       let from = before.get(el.dataset.flip);
+      let fromAnchor = false;
       if (!from && el.dataset.flipFrom) {
         const anchor = root.querySelector(`[data-anchor="${el.dataset.flipFrom}"]`);
-        if (anchor) from = UI.layoutRect(anchor);
+        if (anchor) { from = UI.layoutRect(anchor); fromAnchor = true; }
       }
       if (!from) return;
       const to = UI.layoutRect(el);
       const dx = from.left + from.width / 2 - (to.left + to.width / 2);
       const dy = from.top + from.height / 2 - (to.top + to.height / 2);
       if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
-      const sc = from.width && to.width ? from.width / to.width : 1;
+      const sc = fromAnchor ? 0.45 : from.width && to.width ? from.width / to.width : 1;
+      const delay = Number(el.dataset.flipDelay || 0);
+      if (el.hasAttribute('data-flip-arc')) {
+        // bay theo vòng cung, xoay nhẹ — dùng cho lá bài
+        const rot = Number(el.dataset.flipArc) || 0;
+        const lift = -Math.min(110, Math.hypot(dx, dy) * 0.3);
+        el.animate([
+          { transform: `translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(${sc})` },
+          { transform: `translate(${dx * 0.45}px, ${dy * 0.45 + lift}px) rotate(${rot / 2}deg) scale(${(sc + 1) / 2 * 1.08})`, offset: 0.5 },
+          { transform: 'translate(0,0) rotate(0) scale(1)' },
+        ], { duration: Number(el.dataset.flipDur || 560), delay, easing: 'cubic-bezier(.3,.1,.25,1)', composite: 'add', fill: 'backwards' });
+        return;
+      }
       el.animate(
         [{ transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { transform: 'translate(0,0) scale(1)' }],
-        { duration: 420, delay: Number(el.dataset.flipDelay || 0), easing: 'cubic-bezier(.2,.8,.2,1)', composite: 'add', fill: 'backwards' }
+        { duration: 420, delay, easing: 'cubic-bezier(.2,.8,.2,1)', composite: 'add', fill: 'backwards' }
       );
     });
   },
@@ -296,6 +325,12 @@ const UI = {
         case 'buy': tone(523, 0, 0.1); tone(659, 0.08, 0.1); tone(784, 0.16, 0.2); break;
         case 'win': [523, 659, 784, 1047].forEach((f, k) => tone(f, k * 0.12, 0.35, 0.12, 'triangle')); break;
         case 'bad': tone(300, 0, 0.15, 0.1, 'square'); tone(200, 0.12, 0.25, 0.1, 'square'); break;
+        case 'chips': for (let k = 0; k < 5; k++) { tone(2600 + Math.random() * 900, k * 0.045, 0.04, 0.05, 'square'); noise(k * 0.045, 0.03, 0.2, 5000); } break;
+        case 'coin': [1568, 2093, 2637].forEach((f, k) => tone(f, k * 0.07, 0.18, 0.07, 'triangle')); break;
+        case 'shuffle': for (let k = 0; k < 14; k++) noise(k * 0.035, 0.03, 0.22, 2600 + Math.random() * 1500); break;
+        case 'whoosh': noise(0, 0.25, 0.25, 900); break;
+        case 'fanfare': [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.36], [784, 0.52], [1047, 0.64]].forEach(([f, t]) => { tone(f, t, 0.3, 0.1, 'triangle'); tone(f / 2, t, 0.3, 0.05, 'sine'); }); break;
+        case 'boom': tone(90, 0, 0.5, 0.25, 'sawtooth'); noise(0, 0.35, 0.5, 300); break;
         default:
       }
     } catch (e) { /* trình duyệt chặn âm thanh — bỏ qua */ }

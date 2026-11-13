@@ -20,6 +20,8 @@
   const START = [0, 15, 30, 45];
   const GATE = [59, 14, 29, 44];
   const STEP_MS = 150;
+  const ROLL_MS = 1100;
+  const HORSE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M6.5 21.5h11.5v-2.3c0-2.3-1.2-3.8-2.5-5.3-.9-1-1.7-2.4-1.7-4.1 1.6.6 2.7.4 3.6-.4l1.9 1.1 1.2-1.7c-.6-2.8-2.7-5.6-5.9-6.7L13.7.8l-1.4 2.1C9 3.5 6.4 6.3 6.4 10.5c0 2.8 1.4 4.6 2.4 5.9.5.6.8 1.3.8 2H6.5z"/><circle cx="14.6" cy="6.4" r=".9" fill="#222"/></svg>';
   const absPos = (color, rel) => (color * 15 + rel) % 60;
 
   let lastRollId = null;
@@ -55,9 +57,9 @@
     if (newMove) {
       const mover = s.players.find((p) => p.id === lm.player);
       const cells = pathCells(mover.color, lm.from, lm.to);
-      if (cells.length >= 2) walk = { key: `horse-${mover.color}-${lm.h}`, cells, delay: rolled ? 650 : 0 };
+      if (cells.length >= 2) walk = { key: `horse-${mover.color}-${lm.h}`, cells, delay: rolled ? ROLL_MS : 0 };
     }
-    const walkMs = walk ? walk.delay + STEP_MS * (walk.cells.length - 1) : rolled ? 650 : 0;
+    const walkMs = walk ? walk.delay + STEP_MS * (walk.cells.length - 1) : rolled ? ROLL_MS : 0;
     const kicked = new Set();
     if (prevHorses) {
       s.players.forEach((p) => p.horses.forEach((h, i) => {
@@ -66,8 +68,22 @@
       }));
     }
     if (rolled) UI.sfx('dice');
-    if (kicked.size) setTimeout(() => UI.sfx('kick'), walkMs);
-    if (lastPhase && lastPhase !== 'ended' && s.phase === 'ended') setTimeout(() => UI.sfx('win'), walkMs);
+    if (kicked.size) {
+      setTimeout(() => {
+        UI.sfx('kick');
+        FX.banner('ĐÁ NGỰA!', { kind: 'red', duration: 1200 });
+        FX.shake(root.querySelector('#cn-board'), 10);
+      }, walkMs);
+    }
+    if (lastPhase && lastPhase !== 'ended' && s.phase === 'ended') {
+      const w = s.players.find((p) => p.id === s.winner);
+      setTimeout(() => {
+        FX.banner('CHIẾN THẮNG', { sub: `${UI.esc(w.name)} đưa đủ 4 ngựa về chuồng` , duration: 2600 });
+        FX.confetti();
+        UI.sfx('fanfare');
+      }, walkMs + 200);
+    }
+    if (rolled && s.dice === 6 && s.phase !== 'ended') setTimeout(() => FX.banner('RA 6!', { sub: 'Được đổ thêm lượt', duration: 1100 }), ROLL_MS);
 
     // ---- Vẽ bàn ----
     const cells = [];
@@ -81,9 +97,9 @@
       const id = `${p.color}-${i}`;
       const isLast = lm && lm.player === p.id && lm.h === i;
       const canMove = p.id === ctx.me && movable.has(i);
-      const delay = kicked.has(id) ? walkMs : walk && walk.key === `horse-${id}` ? 0 : (rolled ? 650 : 0);
+      const delay = kicked.has(id) ? walkMs : walk && walk.key === `horse-${id}` ? 0 : (rolled ? ROLL_MS : 0);
       const el = `<div class="horse c${p.color} ${canMove ? 'movable' : ''} ${isLast ? 'last' : ''}" data-key="horse-${id}" data-flip="horse-${id}" data-flip-delay="${delay}"
-        ${canMove ? `data-h="${i}" title="${UI.esc(movable.get(i).label)}"` : ''}>🐴<small>${i + 1}</small></div>`;
+        ${canMove ? `data-h="${i}" title="${UI.esc(movable.get(i).label)}"` : ''}>${HORSE_SVG}<small>${i + 1}</small></div>`;
       if (h.state === 'track') onTrack[h.abs] = el;
       else if (h.state === 'home') onHome[`${p.color}-${h.step}`] = el;
       else inBase[p.color][i] = el;
@@ -102,7 +118,7 @@
       cells.push(`<div class="cn-base c${color}${used ? '' : '-soft'} ${owner && owner.id === s.turn ? 'turn' : ''}" data-key="base${color}" style="grid-row:${r + 1}/span 7;grid-column:${c + 1}/span 7">
         ${used ? `<div class="base-name">${UI.esc(owner.name)}</div><div class="base-av">${ctx.avatar(owner.id, 64)}</div>${slots}` : ''}</div>`);
     });
-    cells.push('<div class="cn-center" data-key="center" style="grid-row:8/span 3;grid-column:8/span 3">🏆</div>');
+    cells.push('<div class="cn-center" data-key="center" style="grid-row:8/span 3;grid-column:8/span 3"><span>🏆</span></div>');
     TRACK.forEach(([r, c], i) => {
       const sc = START.indexOf(i);
       const gc = GATE.indexOf(i);
@@ -133,8 +149,9 @@
         <div class="cn-board" id="cn-board">${cells.join('')}</div>
         <div class="cn-side">
           <div class="cn-dice-wrap">
-            ${UI.diceHTML(s.dice || 6, s.dice ? '' : 'idle', 'cn-dice')}
-            ${myTurn && s.phase === 'roll' ? '<button class="btn btn-primary btn-big roll-btn" data-act="roll" data-key="roll">🎲 Đổ xúc xắc</button>' : '<div data-key="roll-ph" class="roll-ph"></div>'}
+            ${FX.diceHTML(s.dice || 6, 'cn-dice')}
+            ${myTurn && s.phase === 'roll' ? '<button class="btn btn-primary btn-big roll-btn" data-act="roll" data-key="roll">🎲 Đổ xúc xắc</button>'
+              : `<div data-key="roll-ph" class="roll-ph">${s.phase === 'ended' ? 'Ván đã kết thúc' : myTurn ? 'Chọn ngựa để đi' : `${UI.esc(turnP.name)} đang chơi…`}</div>`}
           </div>
           ${myTurn && s.phase === 'move' ? `<div class="action-bar" data-key="moves">${s.movable.map((m) => `<button class="btn btn-secondary btn-small" data-h="${m.h}">Ngựa ${m.h + 1}: ${UI.esc(m.label)}</button>`).join('')}</div>` : ''}
           <div class="cn-players">
@@ -154,11 +171,13 @@
 
     // ---- Chạy animation ----
     const dice = root.querySelector('[data-key="cn-dice"]');
-    if (rolled && s.dice) {
-      dice.dataset.rolling = '1';
-      UI.tumble(dice, s.dice);
-      setTimeout(() => { delete dice.dataset.rolling; dice.dataset.shown = String(s.dice); }, 700);
-    } else UI.syncDice(root);
+    if (rolled && s.dice) FX.rollDie(dice, s.dice, { duration: ROLL_MS });
+    else FX.syncDice(root);
+    // Ngựa bị đá: xoay vòng khi bay về chuồng
+    kicked.forEach((id) => {
+      const el = root.querySelector(`[data-key="horse-${id}"]`);
+      if (el && !UI.reducedMotion) el.animate([{ transform: 'rotate(0) scale(1.4)' }, { transform: 'rotate(720deg) scale(1)' }], { duration: 600, delay: walkMs, composite: 'add', fill: 'backwards' });
+    });
 
     if (walk) {
       const horse = root.querySelector(`[data-key="${walk.key}"]`);
