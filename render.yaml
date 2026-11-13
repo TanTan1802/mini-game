@@ -1,0 +1,12 @@
+# Cấu hình triển khai lên Render (https://render.com) — gói miễn phí
+services:
+  - type: web
+    name: vui-cuoi-tuan
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/info
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

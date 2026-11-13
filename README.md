@@ -11,16 +11,29 @@ Bộ game chơi cùng bạn bè **trong cùng mạng Wi-Fi / LAN**: một máy c
 
 Luật chơi cũng xem được ngay trong game qua nút **📖 Luật**.
 
-## Cài đặt và chạy
+## 🌐 Chơi online (bạn bè ở bất kỳ đâu)
+
+Bấm nút dưới đây để đưa game lên Render (gói miễn phí, cần tạo tài khoản Render bằng GitHub):
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/TanTan1802/mini-game)
+
+1. Bấm nút → đăng nhập Render bằng GitHub → **Apply / Deploy**.
+2. Chờ 2–3 phút, Render cấp một link dạng `https://vui-cuoi-tuan-xxxx.onrender.com`.
+3. Gửi link đó cho mọi người: mở bằng trình duyệt là chơi, không cần cài gì.
+
+> Gói miễn phí của Render sẽ **ngủ sau ~15 phút không ai vào**. Lần mở đầu tiên sau đó mất khoảng 50 giây để server thức dậy, và các phòng đang mở sẽ bị xoá. Cứ mở link, chờ một chút rồi tạo phòng mới là được.
+
+## 🏠 Chơi trong nhà (cùng Wi-Fi)
+
 
 Cần [Node.js](https://nodejs.org) 18 trở lên.
 
 ```bash
-git clone <địa-chỉ-repo>
+git clone https://github.com/TanTan1802/mini-game.git
 ```
 
 ```bash
-cd vui-cuoi-tuan
+cd mini-game
 ```
 
 ```bash
@@ -82,6 +95,7 @@ public/
   js/app.js         Sảnh, phòng chờ, chat
   js/games/         Giao diện từng game
 docs/luat-choi/     Luật chơi chi tiết (Markdown)
+render.yaml         Cấu hình triển khai lên Render (chơi online)
 test/               Test logic: chơi ngẫu nhiên hàng trăm ván để bắt lỗi
 ```
 

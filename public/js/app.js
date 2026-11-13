@@ -140,11 +140,14 @@
   $('inp-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); });
 
   fetch('/api/info').then((r) => r.json()).then((info) => {
-    const urls = info.lanUrls || [];
+    // Chỉ khi mở bằng localhost mới cần chỉ địa chỉ Wi-Fi nội bộ; còn lại (mở qua IP LAN
+    // hoặc chạy online) thì chính địa chỉ đang mở là link để mời bạn bè.
+    const onLocalhost = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(location.hostname);
+    const urls = onLocalhost ? info.lanUrls || [] : [];
     window.__lanUrl = urls[0] || location.origin;
     $('lan-info').innerHTML = urls.length
       ? `📶 Bạn bè cùng Wi-Fi mở: ${urls.map((u) => `<b>${UI.esc(u)}</b>`).join(' hoặc ')}`
-      : '';
+      : `🔗 Mời bạn bè mở: <b>${UI.esc(location.origin)}</b>`;
   }).catch(() => {});
 
   // ---------- Phòng chờ ----------
