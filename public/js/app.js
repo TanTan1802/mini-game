@@ -252,7 +252,8 @@
   };
 
   function renderGame() {
-    $('game-title').textContent = GAME_NAMES[gameState.game];
+    const SHORT = { tienlen: 'Tiến Lên', poker: 'Poker', cangua: 'Cá Ngựa', typhu: 'Tỷ Phú' };
+    $('game-title').textContent = window.innerWidth < 600 ? SHORT[gameState.game] : GAME_NAMES[gameState.game];
     $('game-room-code').textContent = room.code;
     const spectator = !room.gamePlayers.includes(playerId);
     $('spectator-bar').classList.toggle('hidden', !spectator);

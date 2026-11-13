@@ -100,11 +100,11 @@
         </div>
         <div class="hand-fan" id="tl-hand" data-key="hand-${s.gameNo}">${fan}</div>
         ${s.phase === 'playing' && !me.finished ? `
-        <div class="action-bar">
-          <button class="btn btn-ghost" data-act="clear" ${selected.size ? '' : 'disabled'}>Bỏ chọn</button>
-          <button class="btn btn-ghost" data-act="hint" ${myTurn ? '' : 'disabled'}>💡 Gợi ý</button>
+        <div class="action-bar tl-actions">
+          <button class="btn btn-ghost btn-icon" data-act="hint" title="Gợi ý" ${myTurn ? '' : 'disabled'}>💡</button>
+          <button class="btn btn-ghost btn-icon" data-act="clear" title="Bỏ chọn" ${selected.size ? '' : 'disabled'}>✕</button>
           <button class="btn btn-danger" data-act="pass" ${myTurn && s.lastPlay ? '' : 'disabled'}>Bỏ lượt</button>
-          <button class="btn btn-primary" data-act="play" ${myTurn && selected.size ? '' : 'disabled'}>Đánh${selected.size ? ` ${selected.size} lá` : ''}</button>
+          <button class="btn btn-primary" data-act="play" ${myTurn && selected.size ? '' : 'disabled'}>Đánh${selected.size ? ` (${selected.size})` : ''}</button>
         </div>` : ''}
         ${s.requiredCard && myTurn ? `<p class="hint-line">Lượt đầu: phải đánh kèm lá <b>${UI.cardText(s.requiredCard)}</b> (viền vàng)</p>` : ''}`;
     }

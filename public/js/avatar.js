@@ -112,9 +112,21 @@
     }
   }
 
-  /** Trả về chuỗi SVG nhân vật. opts: { size, ring (màu viền), noBg } */
+  const memo = new Map();
+  /** Trả về chuỗi SVG nhân vật (có ghi nhớ). opts: { size, ring (màu viền), noBg } */
   function svg(cfg, opts = {}) {
     const c = normalize(cfg);
+    const key = KEYS.map((k) => c[k]).join('') + '-' + (opts.size || 48) + (opts.ring || '') + (opts.noBg ? 'n' : '');
+    let out = memo.get(key);
+    if (!out) {
+      out = draw(c, opts).replace('<svg class="avatar-svg"', `<svg class="avatar-svg" data-key="av${key}" data-morph-skip`);
+      if (memo.size > 300) memo.clear();
+      memo.set(key, out);
+    }
+    return out;
+  }
+
+  function draw(c, opts) {
     const size = opts.size || 48;
     const skin = SKIN[c.skin];
     const hair = HAIR_COLORS[c.hairColor];

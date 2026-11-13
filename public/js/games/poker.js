@@ -88,30 +88,32 @@
         : '<span class="muted">Bạn không tham gia ván này</span>';
       panel += `<div class="mp-head"><span class="grow">${s.myBest && s.phase === 'betting' ? `<span class="pk-best">${UI.esc(s.myBest)}</span>` : UI.esc(me.name)}</span>
         <span class="mini-tag gold" data-bump="${me.chips}">💰 ${UI.money(me.chips)}</span></div>
-        <div class="hole" data-key="hole-${s.handNo}">${hole}</div>`;
+        `;
+      let acts = '';
       if (o) {
-        panel += `<div class="action-bar">
-          <button class="btn btn-danger" data-act="fold">Úp bài</button>
+        acts = `<div class="action-bar">
+          <button class="btn btn-danger" data-act="fold">Úp</button>
           ${o.canCheck ? '<button class="btn btn-secondary" data-act="check">Xem</button>' : `<button class="btn btn-secondary" data-act="call">Theo ${UI.money(o.toCall)}</button>`}
-          <button class="btn btn-ghost" data-act="allin">All-in ${UI.money(o.maxRaiseTo)}</button>
+          <button class="btn btn-ghost" data-act="allin">All-in</button>
         </div>
         ${o.canRaise && o.maxRaiseTo > o.minRaiseTo ? `
         <div class="pk-raise">
+          <div class="row presets">${potBtn('Tối thiểu', o.minRaiseTo)}${potBtn('½ pot', o.currentBet + Math.floor(o.pot / 2))}${potBtn('Pot', o.currentBet + o.pot)}${potBtn('x3', o.currentBet * 3)}</div>
           <div class="row">
             <input type="range" id="pk-range" min="${o.minRaiseTo}" max="${o.maxRaiseTo}" step="${s.blinds[0]}" value="${raiseTo}">
             <input type="number" id="pk-num" min="${o.minRaiseTo}" max="${o.maxRaiseTo}" value="${raiseTo}">
-          </div>
-          <div class="row">
-            ${potBtn('Tối thiểu', o.minRaiseTo)}${potBtn('½ pot', o.currentBet + Math.floor(o.pot / 2))}${potBtn('Pot', o.currentBet + o.pot)}${potBtn('x3', o.currentBet * 3)}
-            <button class="btn btn-primary" data-act="raise">${o.currentBet ? 'Tố lên' : 'Cược'} <span id="pk-raise-lbl">${UI.money(raiseTo)}</span></button>
+            <button class="btn btn-primary" data-act="raise">${o.currentBet ? 'Tố' : 'Cược'} <span id="pk-raise-lbl">${UI.money(raiseTo)}</span></button>
           </div>
         </div>` : ''}`;
       } else if (s.phase !== 'betting') {
-        panel += `<div class="action-bar">
+        acts = `<div class="action-bar">
           ${me.chips === 0 ? '<button class="btn btn-secondary" data-act="rebuy">💵 Mua thêm chip</button>' : ''}
           ${ctx.spectator ? '' : '<button class="btn btn-primary" data-act="next">🃏 Chia ván mới</button>'}
         </div>`;
+      } else {
+        acts = `<p class="wait-note">⏳ Chờ ${UI.esc(turnP ? turnP.name : '')}…</p>`;
       }
+      panel += `<div class="pk-row"><div class="hole" data-key="hole-${s.handNo}">${hole}</div><div class="pk-acts">${acts}</div></div>`;
     }
 
     UI.render(root, `

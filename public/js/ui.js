@@ -83,7 +83,10 @@ const UI = {
   money(n) { return Number(n).toLocaleString('vi-VN'); },
 
   logHTML(log) {
-    return `<div class="game-log">${log.slice().reverse().map((l) => `<div>${UI.esc(l)}</div>`).join('')}</div>`;
+    // Khoá theo nội dung + lần xuất hiện: dòng mới được chèn lên đầu, các dòng cũ giữ nguyên (không viết lại cả danh sách)
+    const seen = {};
+    const rows = log.map((l) => { seen[l] = (seen[l] || 0) + 1; return `<div data-key="lg${seen[l]}-${UI.esc(l)}">${UI.esc(l)}</div>`; });
+    return `<div class="game-log">${rows.reverse().join('')}</div>`;
   },
 
   /** Vị trí ghế thứ k (0 = mình, ở dưới cùng) trong n ghế quanh bàn oval, tính theo % */
@@ -104,13 +107,19 @@ const UI = {
   // Thay vì xoá và vẽ lại toàn bộ (gây nháy, mất trạng thái), chỉ sửa những phần thay đổi.
   // Phần tử có data-key được ghép theo khoá; phần tử có data-flip được trượt từ vị trí cũ tới vị trí mới.
   render(root, html) {
+    const P = window.__perf; let t0 = P ? performance.now() : 0; const mark = (k) => { if (P) { const t = performance.now(); P.push([k, t - t0]); t0 = t; } };
     const before = new Map();
     // Lá trong quạt bài được đặt bằng transform → lấy vị trí thật (kể cả transform)
     if (!UI.reducedMotion) root.querySelectorAll('[data-flip]').forEach((el) => before.set(el.dataset.flip, el.closest('.hand-fan') ? el.getBoundingClientRect() : UI.layoutRect(el)));
+    mark('đo-trước');
     const tpl = document.createElement('template');
     tpl.innerHTML = html;
+    mark('parse');
     UI.morphChildren(root, tpl.content);
+    mark('morph');
     if (UI.reducedMotion) return;
+    // Bước 1: ĐO tất cả trước (chỉ đọc) — tránh "layout thrashing" khi đo/animate xen kẽ
+    const jobs = [];
     root.querySelectorAll('[data-flip]').forEach((el) => {
       if (el.closest('.hand-fan')) return; // bài trên tay tự trượt bằng CSS transition
       let from = before.get(el.dataset.flip);
@@ -120,10 +129,14 @@ const UI = {
         if (anchor) { from = UI.layoutRect(anchor); fromAnchor = true; }
       }
       if (!from) return;
-      const to = UI.layoutRect(el);
+      jobs.push({ el, from, fromAnchor, to: UI.layoutRect(el) });
+    });
+    mark('đo-sau');
+    // Bước 2: rồi mới chạy animation (chỉ ghi)
+    for (const { el, from, fromAnchor, to } of jobs) {
       const dx = from.left + from.width / 2 - (to.left + to.width / 2);
       const dy = from.top + from.height / 2 - (to.top + to.height / 2);
-      if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+      if (Math.abs(dx) < 2 && Math.abs(dy) < 2) continue;
       const sc = fromAnchor ? 0.45 : from.width && to.width ? from.width / to.width : 1;
       const delay = Number(el.dataset.flipDelay || 0);
       if (el.hasAttribute('data-flip-arc')) {
@@ -135,13 +148,13 @@ const UI = {
           { transform: `translate(${dx * 0.45}px, ${dy * 0.45 + lift}px) rotate(${rot / 2}deg) scale(${(sc + 1) / 2 * 1.08})`, offset: 0.5 },
           { transform: 'translate(0,0) rotate(0) scale(1)' },
         ], { duration: Number(el.dataset.flipDur || 560), delay, easing: 'cubic-bezier(.3,.1,.25,1)', composite: 'add', fill: 'backwards' });
-        return;
+      } else {
+        el.animate(
+          [{ transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { transform: 'translate(0,0) scale(1)' }],
+          { duration: 420, delay, easing: 'cubic-bezier(.2,.8,.2,1)', composite: 'add', fill: 'backwards' }
+        );
       }
-      el.animate(
-        [{ transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { transform: 'translate(0,0) scale(1)' }],
-        { duration: 420, delay, easing: 'cubic-bezier(.2,.8,.2,1)', composite: 'add', fill: 'backwards' }
-      );
-    });
+    }
   },
 
   /** Vị trí bố cục (bỏ qua transform đang áp dụng, để lá bài đang "nhô lên" không bị tính là di chuyển). */

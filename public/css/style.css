@@ -843,3 +843,37 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* =========================================================
+   Bố cục vừa khít một màn hình (game bài): bàn tự co giãn theo chiều cao còn lại,
+   nút bấm luôn nằm trong màn hình, không phải cuộn
+   ========================================================= */
+.ct-wrap { min-height: calc(100dvh - 64px); }
+.ct-table {
+  flex: 1 1 0; aspect-ratio: auto; min-height: 250px; max-height: none; width: 100%;
+  max-width: min(1240px, calc((100dvh - 290px) * 2.3)); margin: 28px auto 20px;
+}
+.my-panel, .ct-wrap > details, .ct-wrap > .status-banner { flex-shrink: 0; }
+.btn-icon { width: 48px; min-width: 48px !important; flex: 0 0 48px !important; padding: 0 !important; font-size: 20px; }
+.tl-actions { flex-wrap: nowrap; }
+.tl-actions .btn:not(.btn-icon) { flex: 1 1 0; max-width: 220px; }
+.hand-fan { height: clamp(112px, 19vh, 150px); }
+.pk-row { display: flex; gap: 16px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap; }
+.pk-acts { display: flex; flex-direction: column; gap: 8px; align-items: stretch; flex: 1 1 340px; max-width: 560px; }
+.pk-acts .action-bar .btn { flex: 1 1 0; }
+.pk-raise .presets .btn { padding: 5px 10px; font-size: 13px; flex: 1 1 0; }
+.pk-raise .row { flex-wrap: nowrap; }
+.pk-raise input[type=range] { min-width: 0; }
+.pk-raise input[type=number] { width: 84px; flex-shrink: 0; }
+.wait-note { color: var(--muted); margin: 0; font-style: italic; text-align: center; }
+.hole .playing-card { --w: clamp(56px, 10vh, 84px); }
+@media (max-width: 700px) {
+  .ct-table { min-height: 300px; margin: 30px auto 18px; }
+  .pk-row { gap: 8px; }
+  .hole { gap: 6px; }
+  .hole .playing-card { --w: 50px; }
+  .pk-acts { flex: 1 1 200px; }
+  .pk-raise .presets .btn { font-size: 12px; padding: 5px 4px; }
+  .pk-raise input[type=number] { width: 64px; font-size: 14px; }
+  .action-bar .btn { padding: 11px 6px; }
+}
