@@ -30,6 +30,7 @@
     const seats = s.players.map((p) => `
       <div class="pk-seat ${p.id === s.turn ? 'turn' : ''} ${p.folded && s.phase === 'betting' ? 'folded' : ''} ${p.id === ctx.me ? 'me' : ''} ${winners.has(p.name) ? 'winner' : ''}" data-key="seat-${p.id}" data-anchor="seat-${p.id}">
         <div class="top">
+          <span class="seat-av">${ctx.avatar(p.id, 34)}</span>
           <span class="name">${winners.has(p.name) ? '🏆 ' : ''}${UI.esc(p.name)}</span>
           <span class="pk-badges">
             ${p.dealer ? '<span class="pk-badge d">D</span>' : ''}

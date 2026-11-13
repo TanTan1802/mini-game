@@ -21,6 +21,10 @@
     store.set('vct-player-id', playerId);
   }
   let selectedGame = store.get('vct-game') || 'tienlen';
+  let myAvatar;
+  try { myAvatar = Avatar.normalize(JSON.parse(store.get('vct-avatar'))); } catch (e) { myAvatar = null; }
+  const firstTime = !store.get('vct-avatar');
+  if (firstTime) { myAvatar = Avatar.random(); store.set('vct-avatar', JSON.stringify(myAvatar)); }
   let room = null;
   let gameState = null;
   let chat = [];
@@ -44,7 +48,7 @@
 
   socket.on('connect', () => {
     $('conn-status').classList.add('hidden');
-    socket.emit('hello', { playerId, name: $('inp-name').value || store.get('vct-name') }, (res) => {
+    socket.emit('hello', { playerId, name: $('inp-name').value || store.get('vct-name'), avatar: myAvatar }, (res) => {
       if (!res || !res.room) { room = null; gameState = null; showScreen(); }
     });
   });
@@ -104,6 +108,7 @@
 
   function renderHome() {
     $('game-picker').innerHTML = pickerHTML(selectedGame);
+    $('btn-avatar').innerHTML = Avatar.svg(myAvatar, { size: 96 });
   }
   $('game-picker').addEventListener('click', (e) => {
     const b = e.target.closest('[data-game]');
@@ -121,14 +126,14 @@
   }
   $('btn-create').onclick = async () => {
     const name = getName();
-    if (name) await emit('room:create', { name, game: selectedGame });
+    if (name) await emit('room:create', { name, game: selectedGame, avatar: myAvatar });
   };
   const join = async () => {
     const name = getName();
     const code = $('inp-code').value.trim().toUpperCase();
     if (!name) return;
     if (code.length !== 4) return UI.toast('Mã phòng gồm 4 ký tự.', 'error');
-    await emit('room:join', { name, code });
+    await emit('room:join', { name, code, avatar: myAvatar });
   };
   $('btn-join').onclick = join;
   $('inp-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); });
@@ -148,7 +153,7 @@
   function playerListHTML(withKick) {
     return room.players.map((p) => `
       <li class="${p.connected ? '' : 'offline'}">
-        <span class="avatar">${UI.esc(p.name.slice(0, 1).toUpperCase())}</span>
+        <span class="avatar-img">${Avatar.svg(p.avatar, { size: 44 })}</span>
         <span class="pl-name">${UI.esc(p.name)}${p.id === playerId ? ' <i class="muted">(bạn)</i>' : ''}</span>
         ${p.id === room.hostId ? '<span class="tag">👑 Chủ phòng</span>' : ''}
         ${p.left ? '<span class="tag gray">Đã rời</span>' : !p.connected ? '<span class="tag gray">Mất kết nối</span>' : ''}
@@ -201,6 +206,11 @@
     hint: () => emit('game:hint'),
     isHost,
     toast: UI.toast,
+    /** SVG nhân vật của người chơi theo id */
+    avatar(id, size = 40, ring) {
+      const p = room && room.players.find((x) => x.id === id);
+      return Avatar.svg(p ? p.avatar : {}, { size, ring });
+    },
   };
 
   function renderGame() {
@@ -214,6 +224,62 @@
     ctx.spectator = spectator;
     view.render($('game-root'), gameState, ctx);
   }
+
+  // ---------- Tạo hình nhân vật ----------
+  let draft = null;
+  let aeTab = 'hair';
+  const TAB_ORDER = ['skin', 'hair', 'hairColor', 'eyes', 'mouth', 'outfit', 'outfitColor', 'acc', 'bg'];
+  function openEditor() {
+    draft = { ...myAvatar };
+    $('ae-name').value = $('inp-name').value || store.get('vct-name') || '';
+    renderEditor();
+    openModal('avatar-modal');
+  }
+  function renderEditor() {
+    $('ae-preview').innerHTML = Avatar.svg(draft, { size: 150 });
+    $('ae-tabs').innerHTML = TAB_ORDER.map((k) => `<button class="ae-tab ${k === aeTab ? 'active' : ''}" data-tab="${k}">${Avatar.OPTIONS[k].label}</button>`).join('');
+    const opt = Avatar.OPTIONS[aeTab];
+    let html = '';
+    for (let i = 0; i < opt.count; i++) {
+      const active = draft[aeTab] === i ? 'active' : '';
+      if (opt.colors) {
+        // lựa chọn màu: hiện luôn nhân vật với màu đó để thấy ngay
+        html += `<button class="ae-opt ${active}" data-val="${i}">${Avatar.svg({ ...draft, [aeTab]: i }, { size: 56 })}<span class="swatch" style="background:${opt.colors[i]}"></span></button>`;
+      } else {
+        html += `<button class="ae-opt ${active}" data-val="${i}">${Avatar.svg({ ...draft, [aeTab]: i }, { size: 56 })}<small>${opt.names[i]}</small></button>`;
+      }
+    }
+    $('ae-options').innerHTML = html;
+  }
+  $('ae-tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tab]');
+    if (b) { aeTab = b.dataset.tab; renderEditor(); }
+  });
+  $('ae-options').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-val]');
+    if (!b) return;
+    draft[aeTab] = Number(b.dataset.val);
+    UI.sfx('step');
+    renderEditor();
+    $('ae-preview').firstElementChild.animate([{ transform: 'scale(.9) rotate(-4deg)' }, { transform: 'scale(1.05) rotate(2deg)' }, { transform: 'none' }], { duration: 300 });
+  });
+  $('ae-random').onclick = () => { draft = Avatar.random(); renderEditor(); UI.sfx('dice'); };
+  $('ae-save').onclick = async () => {
+    const name = $('ae-name').value.trim();
+    if (!name) { UI.toast('Đặt tên cho nhân vật nhé!', 'error'); $('ae-name').focus(); return; }
+    myAvatar = Avatar.normalize(draft);
+    store.set('vct-avatar', JSON.stringify(myAvatar));
+    store.set('vct-name', name);
+    $('inp-name').value = name;
+    closeModals();
+    UI.sfx('buy');
+    await emit('profile', { name, avatar: myAvatar });
+    showScreen();
+  };
+  $('btn-avatar').onclick = openEditor;
+  $('btn-edit-avatar').onclick = openEditor;
+  $('btn-room-avatar').onclick = openEditor;
+  $('inp-name').addEventListener('change', () => store.set('vct-name', $('inp-name').value.trim()));
 
   // ---------- Âm thanh ----------
   const soundBtn = $('btn-sound');

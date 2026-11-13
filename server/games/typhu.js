@@ -96,6 +96,7 @@ class TyPhu {
     }));
     this.owned = {}; // pos -> { owner, houses, mortgaged }
     this.turn = 0;
+    this.turnNo = 1;
     this.phase = 'roll';
     this.doubles = 0;
     this.rollAgain = false;
@@ -371,6 +372,7 @@ class TyPhu {
     let j = this.turn;
     do j = (j + 1) % n; while (this.players[j].bankrupt);
     this.turn = j;
+    this.turnNo++;
     this.phase = 'roll';
     const p = this.cur();
     this.addLog(`— Lượt của ${p.name}${p.inJail ? ' (đang ở tù)' : ''} —`);
@@ -485,6 +487,7 @@ class TyPhu {
         currentRent: this.owned[i] && !this.owned[i].mortgaged && s.type !== 'utility' ? this.rentFor(i, 0) : null,
       })),
       phase: this.phase,
+      turnNo: this.turnNo,
       turn: cur ? cur.id : null,
       dice: this.dice,
       rollId: this.rollId,

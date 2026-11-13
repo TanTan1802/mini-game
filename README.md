@@ -47,6 +47,7 @@ Màn hình sẽ in ra địa chỉ, ví dụ:
 
 ## Cách chơi
 
+0. **Tạo hình nhân vật:** chạm vào ảnh đại diện ở trang chủ để đặt tên và chọn màu da, kiểu tóc, mắt, miệng, trang phục, phụ kiện (kính, mũ, nón lá, vương miện…). Nhân vật được lưu trên máy bạn và hiện trong mọi game. Ở Cờ Tỷ Phú, nhân vật chính là quân cờ của bạn.
 1. Nhập tên → chọn game → **Tạo phòng**. Bạn sẽ nhận một **mã phòng 4 ký tự**.
 2. Bạn bè nhập tên + mã phòng → **Vào**. (Chạm vào mã phòng để chép link mời.)
 3. Chủ phòng 👑 bấm **Bắt đầu**. Có thể đổi game khác trong cùng phòng, không cần tạo lại.
@@ -58,6 +59,8 @@ Màn hình sẽ in ra địa chỉ, ví dụ:
 - 🤖 Người **rời phòng** giữa ván thì máy tự đi thay, để ván không bị kẹt.
 - 👀 Người vào phòng khi ván đang chơi sẽ được xem, và tham gia từ ván sau.
 - 📳 Rung và chuông báo khi tới lượt (có nút 🔊 để tắt âm thanh).
+- 🧑‍🎨 Tạo hình nhân vật riêng, đổi được cả khi đang ở trong phòng.
+- 🏙️ Cờ Tỷ Phú có bàn cờ 3D: nhà và khách sạn đứng nổi trên đất, quân cờ là nhân vật đi từng ô, tiền thay đổi hiện số bay lên, thẻ Cơ Hội lật ra giữa bàn.
 - ✨ Lá bài bay, xúc xắc lăn, ngựa và quân cờ đi từng ô. Nếu thiết bị bật chế độ giảm chuyển động thì animation tự tắt.
 - 📱 Giao diện tối ưu cho điện thoại.
 
@@ -71,6 +74,7 @@ server/
     tienlen.js  poker.js  cangua.js  typhu.js  cards.js
 public/
   index.html  css/style.css
+  js/avatar.js      Vẽ nhân vật bằng SVG từ vài con số cấu hình
   js/ui.js          Tiện ích giao diện: cập nhật DOM mượt, animation, xúc xắc, âm thanh
   js/app.js         Sảnh, phòng chờ, chat
   js/games/         Giao diện từng game

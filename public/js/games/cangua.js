@@ -100,7 +100,7 @@
       const owner = s.players.find((p) => p.color === color);
       const slots = [0, 1, 2, 3].map((k) => `<div class="slot" data-key="slot${k}">${inBase[color][k] || ''}</div>`).join('');
       cells.push(`<div class="cn-base c${color}${used ? '' : '-soft'} ${owner && owner.id === s.turn ? 'turn' : ''}" data-key="base${color}" style="grid-row:${r + 1}/span 7;grid-column:${c + 1}/span 7">
-        ${used ? `<div class="base-name">${UI.esc(owner.name)}</div>${slots}` : ''}</div>`);
+        ${used ? `<div class="base-name">${UI.esc(owner.name)}</div><div class="base-av">${ctx.avatar(owner.id, 64)}</div>${slots}` : ''}</div>`);
     });
     cells.push('<div class="cn-center" data-key="center" style="grid-row:8/span 3;grid-column:8/span 3">🏆</div>');
     TRACK.forEach(([r, c], i) => {
@@ -140,7 +140,7 @@
           <div class="cn-players">
             ${s.players.map((p) => `
               <div class="cn-player ${p.id === s.turn ? 'turn' : ''}" data-key="pl-${p.id}">
-                <span class="cn-dot c${p.color}"></span>
+                <span class="cn-av c${p.color}">${ctx.avatar(p.id, 34)}</span>
                 <b class="grow">${UI.esc(p.name)}${p.id === ctx.me ? ' (bạn)' : ''}</b>
                 <span class="mini-tag">${UI.esc(p.colorName)}</span>
                 <span class="mini-tag gold" data-bump="${p.homeCount}">🏠 ${p.homeCount}/4</span>

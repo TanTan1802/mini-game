@@ -31,7 +31,8 @@
 
     const oppHTML = opponents.map((p) => `
       <div class="tl-opp ${s.turn === p.id && s.phase === 'playing' ? 'turn' : ''} ${p.finished ? 'done' : ''}" data-key="opp-${p.id}" data-anchor="opp-${p.id}">
-        <div class="name"><span class="avatar sm">${UI.esc(p.name[0].toUpperCase())}</span>${UI.esc(p.name)}</div>
+        <div class="opp-avatar">${ctx.avatar(p.id, 46)}</div>
+        <div class="name">${UI.esc(p.name)}</div>
         <div class="tl-count">${UI.card(null, { back: true })}<b data-bump="${p.count}">${p.count}</b> lá</div>
         <div class="tags">
           ${p.place ? `<span class="mini-tag gold">${p.place === 1 ? '🥇 Nhất' : 'Hạng ' + p.place}</span>` : ''}
@@ -72,7 +73,7 @@
     const myHandHTML = me ? `
       <div class="tl-hand-wrap ${myTurn ? 'active' : ''}">
         <div class="tl-me-line">
-          <b>${UI.esc(me.name)} (bạn) — <span data-bump="${s.myHand.length}">${s.myHand.length}</span> lá</b>
+          <b class="me-name">${ctx.avatar(me.id, 30)} ${UI.esc(me.name)} (bạn) — <span data-bump="${s.myHand.length}">${s.myHand.length}</span> lá</b>
           <span class="tags">
             ${me.place ? `<span class="mini-tag gold">Hạng ${me.place}</span>` : ''}
             ${me.passed ? '<span class="mini-tag red">Đã bỏ lượt vòng này</span>' : ''}

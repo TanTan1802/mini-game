@@ -19,10 +19,16 @@
       </header>
 
       <div class="card-panel">
-        <label class="field">
-          <span>Tên của bạn</span>
-          <input id="inp-name" maxlength="16" placeholder="Ví dụ: Tuấn" autocomplete="nickname">
-        </label>
+        <div class="profile-card">
+          <button id="btn-avatar" class="profile-avatar" title="Tạo hình nhân vật"></button>
+          <div class="profile-info">
+            <label class="field">
+              <span>Tên nhân vật</span>
+              <input id="inp-name" maxlength="16" placeholder="Ví dụ: Tuấn" autocomplete="nickname">
+            </label>
+            <button id="btn-edit-avatar" class="btn btn-gold btn-small">✏️ Tạo hình nhân vật</button>
+          </div>
+        </div>
 
         <h2 class="panel-title">Tạo phòng mới</h2>
         <div id="game-picker" class="game-picker"></div>
@@ -59,7 +65,8 @@
         <div id="room-game-picker" class="game-picker"></div>
         <button id="btn-room-rules" class="btn btn-ghost btn-small">📖 Xem luật chơi</button>
 
-        <h2 class="panel-title">Người chơi <span id="player-count" class="muted"></span></h2>
+        <h2 class="panel-title row-title">Người chơi <span id="player-count" class="muted"></span>
+          <button id="btn-room-avatar" class="btn btn-ghost btn-small">✏️ Đổi nhân vật</button></h2>
         <ul id="room-players" class="player-list"></ul>
 
         <button id="btn-start" class="btn btn-primary btn-big">Bắt đầu chơi</button>
@@ -117,10 +124,28 @@
     </div>
   </div>
 
+  <!-- ============ TẠO HÌNH NHÂN VẬT ============ -->
+  <div id="avatar-modal" class="modal hidden">
+    <div class="modal-box avatar-editor">
+      <div class="modal-head"><h3>Tạo hình nhân vật</h3><button class="btn btn-ghost btn-small" data-close>✕</button></div>
+      <div class="ae-top">
+        <div id="ae-preview" class="ae-preview"></div>
+        <div class="ae-side">
+          <label class="field"><span>Tên nhân vật</span><input id="ae-name" maxlength="16" placeholder="Tên của bạn"></label>
+          <button id="ae-random" class="btn btn-secondary btn-small">🎲 Ngẫu nhiên</button>
+        </div>
+      </div>
+      <div id="ae-tabs" class="ae-tabs"></div>
+      <div id="ae-options" class="ae-options"></div>
+      <button id="ae-save" class="btn btn-primary btn-big">✅ Lưu nhân vật</button>
+    </div>
+  </div>
+
   <div id="toast" class="toast hidden"></div>
   <div id="conn-status" class="conn-status hidden">Mất kết nối — đang thử kết nối lại…</div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/avatar.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/games/tienlen.js"></script>
   <script src="/js/games/poker.js"></script>

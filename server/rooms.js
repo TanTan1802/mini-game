@@ -9,6 +9,15 @@ const GAMES = { poker: Poker, tienlen: TienLen, cangua: CaNgua, typhu: TyPhu };
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const cleanName = (s) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 16);
+const AVATAR_KEYS = ['skin', 'hair', 'hairColor', 'eyes', 'mouth', 'outfit', 'outfitColor', 'acc', 'bg'];
+const cleanAvatar = (a) => {
+  const out = {};
+  AVATAR_KEYS.forEach((k) => {
+    const v = Math.floor(Number(a && a[k]));
+    out[k] = Number.isFinite(v) && v >= 0 && v < 20 ? v : 0;
+  });
+  return out;
+};
 const cleanId = (s) => String(s || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
 
 /** Nước đi tự động cho người đã rời phòng, để ván không bị kẹt. */
@@ -67,9 +76,10 @@ class RoomManager {
       }
     };
 
-    socket.on('hello', guard(({ playerId, name }, ack) => {
+    socket.on('hello', guard(({ playerId, name, avatar }, ack) => {
       socket.data.playerId = cleanId(playerId);
       socket.data.name = cleanName(name);
+      socket.data.avatar = cleanAvatar(avatar);
       if (!socket.data.playerId) throw new Error('Thiếu mã người chơi.');
       const code = this.playerRoom.get(socket.data.playerId);
       const room = code && this.rooms.get(code);
@@ -77,6 +87,7 @@ class RoomManager {
         const pl = room.players.find((p) => p.id === socket.data.playerId);
         pl.connected = true;
         pl.left = false;
+        pl.avatar = socket.data.avatar;
         socket.join(code);
         this.broadcast(room);
         this.chatSystem(room, `${pl.name} đã kết nối lại.`);
@@ -84,8 +95,8 @@ class RoomManager {
       reply(ack, { ok: true, room: room ? room.code : null });
     }));
 
-    socket.on('room:create', guard(({ name, game }, ack) => {
-      this.requireHello(socket, name);
+    socket.on('room:create', guard(({ name, game, avatar }, ack) => {
+      this.requireHello(socket, name, avatar);
       this.leaveCurrent(socket);
       const code = this.newCode();
       const room = {
@@ -97,8 +108,8 @@ class RoomManager {
       reply(ack, { ok: true, code });
     }));
 
-    socket.on('room:join', guard(({ code, name }, ack) => {
-      this.requireHello(socket, name);
+    socket.on('room:join', guard(({ code, name, avatar }, ack) => {
+      this.requireHello(socket, name, avatar);
       code = String(code || '').toUpperCase().trim();
       const room = this.rooms.get(code);
       if (!room) throw new Error(`Không tìm thấy phòng "${code}".`);
@@ -156,6 +167,29 @@ class RoomManager {
       reply(ack, { ok: true });
     }));
 
+    // Đổi nhân vật (và tên, nếu chưa vào ván) bất cứ lúc nào
+    socket.on('profile', guard(({ name, avatar }, ack) => {
+      if (avatar) socket.data.avatar = cleanAvatar(avatar);
+      const n = cleanName(name);
+      if (n) socket.data.name = n;
+      const code = this.playerRoom.get(socket.data.playerId);
+      const room = code && this.rooms.get(code);
+      if (room) {
+        const pl = room.players.find((p) => p.id === socket.data.playerId);
+        if (pl) {
+          pl.avatar = socket.data.avatar;
+          const inGame = room.game && room.gamePlayers.includes(pl.id);
+          if (n && n !== pl.name && !inGame) {
+            if (room.players.some((p) => p !== pl && p.name === n)) throw new Error('Tên này đã có người dùng trong phòng.');
+            this.chatSystem(room, `${pl.name} đổi tên thành ${n}.`);
+            pl.name = n;
+          }
+          this.broadcast(room);
+        }
+      }
+      reply(ack, { ok: true });
+    }));
+
     socket.on('chat', guard(({ text }) => {
       const room = this.myRoom(socket);
       const t = String(text || '').trim().slice(0, 200);
@@ -200,8 +234,9 @@ class RoomManager {
     });
   }
 
-  requireHello(socket, name) {
+  requireHello(socket, name, avatar) {
     if (!socket.data.playerId) throw new Error('Chưa kết nối xong, thử lại nhé.');
+    if (avatar) socket.data.avatar = cleanAvatar(avatar);
     const n = cleanName(name || socket.data.name);
     if (!n) throw new Error('Hãy nhập tên của bạn.');
     socket.data.name = n;
@@ -224,12 +259,12 @@ class RoomManager {
     const id = socket.data.playerId;
     let pl = room.players.find((p) => p.id === id);
     if (pl) {
-      Object.assign(pl, { name: pl.name, connected: true, left: false });
+      Object.assign(pl, { connected: true, left: false, avatar: socket.data.avatar || pl.avatar });
     } else {
       let name = socket.data.name;
       let k = 2;
       while (room.players.some((p) => p.name === name)) name = `${socket.data.name} ${k++}`;
-      pl = { id, name, connected: true, left: false };
+      pl = { id, name, connected: true, left: false, avatar: socket.data.avatar || cleanAvatar({}) };
       room.players.push(pl);
       this.chatSystem(room, `${name} đã vào phòng.`);
     }
@@ -306,7 +341,7 @@ class RoomManager {
       gameMeta: G.meta,
       playing: !!room.game,
       gamePlayers: room.gamePlayers,
-      players: room.players.map((p) => ({ id: p.id, name: p.name, connected: p.connected, left: p.left })),
+      players: room.players.map((p) => ({ id: p.id, name: p.name, connected: p.connected, left: p.left, avatar: p.avatar })),
     };
     for (const s of this.io.sockets.sockets.values()) {
       const pid = s.data.playerId;
@@ -319,4 +354,4 @@ class RoomManager {
   }
 }
 
-module.exports = { RoomManager, GAMES, autoAction };
+module.exports = { RoomManager, GAMES, autoAction, cleanAvatar };
