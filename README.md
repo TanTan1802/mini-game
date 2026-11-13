@@ -11,17 +11,25 @@ Bộ game chơi cùng bạn bè **trong cùng mạng Wi-Fi / LAN**: một máy c
 
 Luật chơi cũng xem được ngay trong game qua nút **📖 Luật**.
 
-## 🌐 Chơi online (bạn bè ở bất kỳ đâu)
+## ▶️ Chơi ngay: **https://tantan1802.github.io/mini-game/**
 
-Bấm nút dưới đây để đưa game lên Render (gói miễn phí, cần tạo tài khoản Render bằng GitHub):
+Không cần cài gì, mở link trên điện thoại hoặc máy tính là chơi được, bạn bè ở đâu cũng được:
+
+1. Một người bấm **♠ Mở bàn chơi** để làm **chủ phòng**, nhận mã phòng 4 ký tự.
+2. Gửi mã (hoặc chạm vào mã để chép **link mời**) cho bạn bè. Họ mở link, nhập tên rồi bấm **Vào**.
+3. Chủ phòng chọn game và bấm **Bắt đầu**.
+
+> **Chủ phòng giữ tab mở trong lúc chơi.** Bản online chạy kiểu ngang hàng (P2P): máy chủ phòng chạy luật chơi, các máy khác kết nối thẳng tới đó qua WebRTC. Chủ phòng đóng tab thì phòng kết thúc. Khách lỡ tải lại trang thì tự vào lại đúng ván.
+>
+> Một số mạng chặn kết nối ngang hàng (mạng công ty, vài mạng 4G). Nếu không vào được phòng, thử đổi sang Wi-Fi khác, hoặc dùng cách chạy server bên dưới.
+
+### Chơi online bằng server riêng (ổn định hơn)
+
+Muốn phòng không phụ thuộc vào máy chủ phòng, có thể đưa server lên Render (gói miễn phí):
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/TanTan1802/mini-game)
 
-1. Bấm nút → đăng nhập Render bằng GitHub → **Apply / Deploy**.
-2. Chờ 2–3 phút, Render cấp một link dạng `https://vui-cuoi-tuan-xxxx.onrender.com`.
-3. Gửi link đó cho mọi người: mở bằng trình duyệt là chơi, không cần cài gì.
-
-> Gói miễn phí của Render sẽ **ngủ sau ~15 phút không ai vào**. Lần mở đầu tiên sau đó mất khoảng 50 giây để server thức dậy, và các phòng đang mở sẽ bị xoá. Cứ mở link, chờ một chút rồi tạo phòng mới là được.
+Bấm nút → đăng nhập Render bằng GitHub → **Apply**. Render cấp một link dạng `https://vui-cuoi-tuan-xxxx.onrender.com` để gửi cho mọi người. Gói miễn phí ngủ sau ~15 phút không ai vào, lần mở sau chờ khoảng 50 giây.
 
 ## 🏠 Chơi trong nhà (cùng Wi-Fi)
 
@@ -96,12 +104,32 @@ public/
   js/games/         Giao diện từng game
 docs/luat-choi/     Luật chơi chi tiết (Markdown)
 render.yaml         Cấu hình triển khai lên Render (chơi online)
+scripts/build-pages.js  Tạo bản web tĩnh P2P cho GitHub Pages
+public/js/net.js    Lớp kết nối: Socket.io (server) hoặc P2P (PeerJS, chủ phòng chạy luật chơi)
 test/               Test logic: chơi ngẫu nhiên hàng trăm ván để bắt lỗi
 ```
 
 Server giữ toàn bộ trạng thái và chỉ gửi cho mỗi người phần họ được phép thấy, ví dụ bài trên tay người khác không bao giờ được gửi tới máy bạn.
 
 ## Phát triển
+
+Bản GitHub Pages được build tự động bởi `.github/workflows/pages.yml` mỗi khi push lên `main`. Lần đầu cần bật: **Settings → Pages → Source: GitHub Actions**.
+
+Chạy thử bản P2P trên máy (máy chủ PeerJS riêng ở cổng 9000, trang ở cổng 8080):
+
+```bash
+npm run build:pages
+```
+
+```bash
+npx peerjs --port 9000 --host 127.0.0.1
+```
+
+```bash
+npx http-server dist-pages -p 8080
+```
+
+Rồi mở `http://localhost:8080/?peer=127.0.0.1:9000`.
 
 ```bash
 npm run dev

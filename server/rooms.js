@@ -51,8 +51,10 @@ function autoAction(game, playerId) {
 }
 
 class RoomManager {
-  constructor(io) {
+  /** opts.codeGen: hàm tạo mã phòng (chế độ P2P dùng mã đã đăng ký làm địa chỉ kết nối) */
+  constructor(io, opts = {}) {
     this.io = io;
+    if (opts.codeGen) this.newCode = opts.codeGen;
     this.rooms = new Map(); // code -> room
     this.playerRoom = new Map(); // playerId -> code
     io.on('connection', (socket) => this.onConnection(socket));
@@ -225,12 +227,13 @@ class RoomManager {
       if (pl) pl.connected = false;
       this.broadcast(room);
       // Xoá phòng nếu không còn ai kết nối sau 30 phút
-      setTimeout(() => {
+      const cleanup = setTimeout(() => {
         if (this.rooms.get(code) === room && room.players.every((p) => !p.connected)) {
           room.players.forEach((p) => this.playerRoom.delete(p.id));
           this.rooms.delete(code);
         }
-      }, 30 * 60 * 1000).unref();
+      }, 30 * 60 * 1000);
+      if (cleanup.unref) cleanup.unref(); // Node: không giữ tiến trình sống vì hẹn giờ này
     });
   }
 

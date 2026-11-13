@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "build:pages": "node scripts/build-pages.js"
   },
   "keywords": [
     "tien-len",
@@ -24,5 +25,9 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "peer": "^1.0.2",
+    "peerjs": "^1.5.4"
   }
 }

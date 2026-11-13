@@ -35,7 +35,16 @@
   const params = new URLSearchParams(location.search);
   if (params.get('room')) $('inp-code').value = params.get('room').toUpperCase();
 
-  const socket = io({ transports: ['websocket', 'polling'] });
+  const socket = Net.socket; // Socket.io (chạy server) hoặc P2P (chạy trên GitHub Pages)
+  const P2P = Net.mode === 'p2p';
+  // Link mời bạn bè: trang đang mở + ?room=MÃ
+  const pageBase = () => location.href.split(/[?#]/)[0].replace(/index\.html$/, '');
+  const inviteLink = (code) => (P2P ? `${pageBase()}?room=${code}` : `${window.__lanUrl || location.origin}/?room=${code}`);
+  function busy(btn, on, text) {
+    if (!btn) return;
+    if (on) { btn.dataset.label = btn.textContent; btn.textContent = text || 'Đang kết nối…'; btn.disabled = true; }
+    else { btn.textContent = btn.dataset.label || btn.textContent; btn.disabled = false; }
+  }
 
   function emit(ev, data) {
     return new Promise((resolve) => {
@@ -52,7 +61,14 @@
       if (!res || !res.room) { room = null; gameState = null; showScreen(); }
     });
   });
-  socket.on('disconnect', () => $('conn-status').classList.remove('hidden'));
+  socket.on('disconnect', () => { if (!P2P || room) $('conn-status').classList.remove('hidden'); });
+  socket.on('host-gone', () => {
+    $('conn-status').classList.add('hidden');
+    if (room) UI.toast('Chủ phòng đã đóng phòng hoặc mất kết nối.', 'error');
+    room = null; gameState = null;
+    closeModals();
+    showScreen();
+  });
 
   socket.on('room:state', (r) => {
     const wasPlaying = room && room.playing;
@@ -82,6 +98,7 @@
   });
   socket.on('room:kicked', () => {
     room = null; gameState = null;
+    Net.leave();
     UI.toast('Bạn đã được mời ra khỏi phòng.', 'error');
     showScreen();
   });
@@ -126,20 +143,35 @@
   }
   $('btn-create').onclick = async () => {
     const name = getName();
-    if (name) await emit('room:create', { name, game: selectedGame, avatar: myAvatar });
+    if (!name) return;
+    if (P2P) {
+      busy($('btn-create'), true, 'Đang mở bàn…');
+      try { await Net.host(); } catch (e) { UI.toast(e.message || 'Không mở được bàn chơi.', 'error'); return; } finally { busy($('btn-create'), false); }
+    }
+    await emit('room:create', { name, game: selectedGame, avatar: myAvatar });
   };
   const join = async () => {
     const name = getName();
     const code = $('inp-code').value.trim().toUpperCase();
     if (!name) return;
     if (code.length !== 4) return UI.toast('Mã phòng gồm 4 ký tự.', 'error');
+    if (P2P) {
+      busy($('btn-join'), true, '…');
+      try { await Net.join(code); } catch (e) { UI.toast(e.message || 'Không vào được phòng.', 'error'); return; } finally { busy($('btn-join'), false); }
+    }
     await emit('room:join', { name, code, avatar: myAvatar });
   };
   $('btn-join').onclick = join;
   $('inp-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); });
   $('inp-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); });
 
-  fetch('/api/info').then((r) => r.json()).then((info) => {
+  if (P2P) {
+    window.__lanUrl = pageBase();
+    $('lan-info').innerHTML = '🌐 <b>Chơi online</b> — mở bàn rồi gửi link / mã phòng cho bạn bè. Giữ tab này mở trong lúc chơi nếu bạn là chủ phòng.';
+    // Tải lại trang khi đang là khách: tự vào lại phòng cũ
+    const saved = Net.savedRoom();
+    if (saved) Net.join(saved).catch(() => {});
+  } else fetch('api/info').then((r) => r.json()).then((info) => {
     // Chỉ khi mở bằng localhost mới cần chỉ địa chỉ Wi-Fi nội bộ; còn lại (mở qua IP LAN
     // hoặc chạy online) thì chính địa chỉ đang mở là link để mời bạn bè.
     const onLocalhost = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(location.hostname);
@@ -166,8 +198,7 @@
 
   function renderRoom() {
     $('room-code').textContent = room.code;
-    const url = (window.__lanUrl || location.origin);
-    $('share-url').textContent = url;
+    $('share-url').textContent = P2P ? inviteLink(room.code) : (window.__lanUrl || location.origin);
     $('room-game-picker').innerHTML = pickerHTML(room.gameId, !isHost());
     const active = room.players.filter((p) => !p.left).length;
     const meta = room.gameMeta;
@@ -190,15 +221,19 @@
   });
   $('btn-start').onclick = () => emit('room:start');
   const leave = async () => {
-    if (room && room.playing && !confirm('Rời phòng khi đang chơi? Máy sẽ tự đi thay bạn.')) return;
+    const others = room && room.players.some((p) => p.id !== playerId && !p.left);
+    if (P2P && Net.isHosting() && others) {
+      if (!confirm('Bạn là chủ phòng — rời đi sẽ đóng phòng của mọi người. Tiếp tục?')) return;
+    } else if (room && room.playing && !confirm('Rời phòng khi đang chơi? Máy sẽ tự đi thay bạn.')) return;
     await emit('room:leave');
+    await Net.leave();
     room = null; gameState = null;
     closeModals();
     showScreen();
   };
   $('btn-leave').onclick = leave;
   $('room-code').onclick = () => {
-    const link = `${window.__lanUrl || location.origin}/?room=${room.code}`;
+    const link = inviteLink(room.code);
     navigator.clipboard && navigator.clipboard.writeText(link).then(() => UI.toast('Đã chép link mời vào bộ nhớ tạm!'));
   };
 
@@ -303,7 +338,7 @@
     $('rules-body').textContent = 'Đang tải…';
     openModal('rules-modal');
     try {
-      const md = await (await fetch('/rules/' + gameId)).text();
+      const md = await (await fetch(P2P ? `rules/${gameId}.md` : `rules/${gameId}`)).text();
       $('rules-body').innerHTML = UI.markdown(md);
       $('rules-body').scrollTop = 0;
     } catch (e) {
