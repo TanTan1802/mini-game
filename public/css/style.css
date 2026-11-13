@@ -97,9 +97,10 @@ body[data-screen="game"] .bg-deco { display: none; }
 .btn-primary::after, .tile.primary::after {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
   background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .55) 45%, transparent 60%);
-  background-size: 250% 100%; animation: shine 3.2s ease-in-out infinite;
+  background-size: 250% 100%; background-position: 150% 0;
 }
-@keyframes shine { 0%, 60% { background-position: 150% 0; } 100% { background-position: -100% 0; } }
+@media (hover: hover) { .btn-primary:hover::after, .tile.primary:hover::after { animation: shine .9s ease-out; } }
+@keyframes shine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
 
 /* ---------- Trang chủ & phòng chờ ---------- */
 #screen-home, #screen-room { min-height: 100vh; min-height: 100dvh; padding: 26px 16px 40px; }
@@ -222,7 +223,7 @@ input::placeholder { color: #6d6658; }
   text-align: center; font-weight: 700; padding: 8px 14px; border-radius: 99px; font-size: 15px; align-self: center; min-width: min(100%, 360px);
   background: rgba(0, 0, 0, .45); border: 1px solid var(--line); color: var(--ivory); transition: all .3s;
 }
-.status-banner.my-turn { background: var(--gold-grad); color: #2a1d00; border-color: transparent; animation: glow 1.6s ease-in-out infinite; }
+.status-banner.my-turn { background: var(--gold-grad); color: #2a1d00; border-color: transparent; box-shadow: 0 0 22px rgba(246, 226, 122, .35); animation: glow 1.6s ease-in-out 3; }
 @keyframes glow { 50% { box-shadow: 0 0 0 6px rgba(212, 175, 55, .18), 0 0 26px rgba(246, 226, 122, .5); } }
 .action-bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .action-bar .btn { min-width: 100px; }
@@ -573,7 +574,7 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
   box-shadow: 0 6px 16px rgba(0, 0, 0, .5); transition: transform .25s, border-color .25s, box-shadow .25s;
 }
 .tp-pill.turn { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 0 0 1px var(--gold), 0 0 24px rgba(212, 175, 55, .35), 0 8px 22px rgba(0, 0, 0, .5); }
-.tp-pill.turn .pill-av { animation: bob 1s ease-in-out infinite; }
+.tp-pill.turn .pill-av { filter: drop-shadow(0 0 8px rgba(246, 226, 122, .7)); }
 .tp-pill.bankrupt { filter: grayscale(1); opacity: .45; }
 .pill-info { min-width: 0; flex: 1; }
 .pill-name { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -617,7 +618,7 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
 .bld .house { font-size: clamp(8px, 1.5vw, 14px); margin: 0 -2px; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
 .bld .hotel { font-size: clamp(16px, 3vw, 28px); filter: drop-shadow(0 0 6px rgba(246, 226, 122, .8)); }
 .bld .flag { width: 2px; height: clamp(12px, 2.4vw, 22px); background: #555; position: relative; margin-right: 3px; }
-.bld .flag::after { content: ''; position: absolute; left: 2px; top: 0; width: clamp(7px, 1.4vw, 12px); height: clamp(5px, 1vw, 8px); background: var(--c); border-radius: 0 2px 2px 0; animation: wave 1.2s ease-in-out infinite; transform-origin: left; }
+.bld .flag::after { content: ''; position: absolute; left: 2px; top: 0; width: clamp(7px, 1.4vw, 12px); height: clamp(5px, 1vw, 8px); background: var(--c); border-radius: 0 2px 2px 0; transform: skewY(6deg); transform-origin: left; }
 @keyframes wave { 50% { transform: skewY(8deg) scaleX(.85); } }
 /* Giữa bàn: thành phố về đêm */
 .tp-center {
@@ -629,7 +630,7 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
   background: radial-gradient(ellipse at 50% 50%, rgba(246, 226, 122, .12), transparent 60%); box-shadow: 0 0 0 2px rgba(246, 226, 122, .4), 0 0 0 8px rgba(246, 226, 122, .08);
 }
 .lake .pad { display: none; }
-.lake .boat { position: absolute; left: 50%; top: 40%; margin-left: -.5em; font-size: clamp(14px, 3vw, 28px); animation: bob 2.4s ease-in-out infinite; }
+.lake .boat { position: absolute; left: 50%; top: 40%; margin-left: -.5em; font-size: clamp(14px, 3vw, 28px); }
 .tree { position: absolute; font-size: clamp(14px, 3vw, 30px); }
 .tree.t1 { left: 6%; top: 8%; } .tree.t2 { right: 6%; top: 10%; } .tree.t3 { left: 8%; bottom: 10%; } .tree.t4 { right: 8%; bottom: 12%; }
 .skyline { position: absolute; left: 50%; top: 2%; margin-left: -4%; font-size: clamp(18px, 4vw, 40px); filter: drop-shadow(0 0 8px rgba(246, 226, 122, .6)); }
@@ -638,13 +639,13 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
   background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .6));
 }
 .tp-pawns { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
-.pawn { position: absolute; width: 0; height: 0; transform-style: preserve-3d; z-index: 10; }
+.pawn { position: absolute; width: 0; height: 0; transform-style: preserve-3d; z-index: 10; will-change: transform; }
 .pawn-shadow { position: absolute; width: clamp(16px, 3.2vw, 30px); height: clamp(8px, 1.5vw, 14px); left: 0; top: 0; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, .55), transparent 70%); }
 .pawn-body { position: absolute; left: 0; bottom: 0; width: clamp(24px, 4.6vw, 44px); margin-left: calc(clamp(24px, 4.6vw, 44px) / -2); transform: rotateX(calc(-1 * var(--tilt))) translateZ(2px); transform-origin: 50% 100%; display: flex; flex-direction: column; align-items: center; }
 .pawn-head .avatar-svg { width: clamp(24px, 4.6vw, 44px); height: auto; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .5)); }
 .pawn-stem { width: 40%; height: clamp(6px, 1.2vw, 12px); margin-top: -2px; background: linear-gradient(90deg, #8f6a1c, #f6e27a, #8f6a1c); border-radius: 0 0 40% 40% / 0 0 60% 60%; }
-.pawn.turn .pawn-head { animation: bob .8s ease-in-out infinite; }
-.pawn.turn .pawn-shadow { box-shadow: 0 0 0 3px var(--c); animation: ring 1s ease-out infinite; }
+.pawn.turn .pawn-head { animation: bob .8s ease-in-out 4; will-change: transform; }
+.pawn.turn .pawn-shadow { box-shadow: 0 0 0 3px var(--c), 0 0 10px 3px var(--c); }
 @keyframes ring { from { box-shadow: 0 0 0 0 var(--c); } to { box-shadow: 0 0 0 12px transparent; } }
 .pawn-bars { position: absolute; top: 25%; font-size: clamp(10px, 2vw, 18px); }
 .tp-overlay { position: absolute; left: 0; right: 0; top: 33%; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
@@ -693,7 +694,7 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
 .tile.teal { background: linear-gradient(180deg, #2c6fd6, #173f80); box-shadow: 0 5px 0 #0c2350; }
 .tile.danger { background: linear-gradient(180deg, #c42a42, #7a1424); box-shadow: 0 5px 0 #4a0b15; }
 .tile.small { min-width: 64px; }
-.tile.pulse { animation: glow 1.6s ease-in-out infinite; }
+.tile.pulse { box-shadow: 0 5px 0 #6b4e12, 0 0 0 4px rgba(246, 226, 122, .25), 0 0 24px rgba(246, 226, 122, .45); }
 .tp-bottom { display: flex; flex-direction: column; gap: 8px; }
 .my-assets { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font-size: 14px; }
 .my-assets b { margin-right: 4px; color: var(--gold-hi); }

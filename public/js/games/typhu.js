@@ -295,8 +295,16 @@
         }
         const step = Math.min(STEP_MS, 2600 / path.length);
         walkEnd = Math.max(walkEnd, delay + step * (path.length - 1));
-        const frames = path.map((i) => { const c = squareCenter(i); return { left: `${c.x + offL}%`, top: `${c.y + offT}%` }; });
-        frames[frames.length - 1] = { left: endL, top: endT };
+        // Dùng transform (px theo kích thước bàn) thay cho left/top: không phải tính lại bố cục mỗi khung hình
+        const board = root.querySelector('#tp-board');
+        const bw = board.clientWidth - 14; // trừ padding
+        const ex = parseFloat(endL);
+        const ey = parseFloat(endT);
+        const frames = path.map((i) => {
+          const c = squareCenter(i);
+          return { transform: `translate(${((c.x + offL - ex) / 100) * bw}px, ${((c.y + offT - ey) / 100) * bw}px)` };
+        });
+        frames[frames.length - 1] = { transform: 'translate(0, 0)' };
         pawn.getAnimations().forEach((a) => a.cancel());
         pawn.animate(frames, { duration: step * (path.length - 1), delay, easing: 'linear', fill: 'backwards' });
         const body = pawn.querySelector('.pawn-body');
