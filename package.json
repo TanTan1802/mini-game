@@ -1,0 +1,28 @@
+{
+  "name": "vui-cuoi-tuan",
+  "version": "1.0.0",
+  "description": "Chơi Tiến Lên, Poker, Cá Ngựa, Cờ Tỷ Phú cùng bạn bè qua mạng LAN",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "tien-len",
+    "poker",
+    "ca-ngua",
+    "co-ty-phu",
+    "lan",
+    "multiplayer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.22.3",
+    "socket.io": "^4.8.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
