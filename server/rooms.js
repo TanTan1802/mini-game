@@ -4,6 +4,15 @@ const { Poker } = require('./games/poker');
 const { TienLen } = require('./games/tienlen');
 const { CaNgua } = require('./games/cangua');
 const { TyPhu } = require('./games/typhu');
+const Bots = require('./bots');
+
+const BOT_NAMES = ['Bé Na', 'Chú Tư', 'Cô Ba', 'Anh Hai', 'Bác Sáu', 'Út Mập', 'Cậu Bảy', 'Dì Năm', 'Ông Tám', 'Chị Mười'];
+const randomBotAvatar = () => ({
+  skin: Math.floor(Math.random() * 5), hair: Math.floor(Math.random() * 8), hairColor: Math.floor(Math.random() * 8),
+  eyes: Math.floor(Math.random() * 5), mouth: Math.floor(Math.random() * 5), outfit: Math.floor(Math.random() * 4),
+  outfitColor: Math.floor(Math.random() * 8), acc: Math.floor(Math.random() * 9), bg: Math.floor(Math.random() * 8),
+});
+const isHuman = (p) => !p.bot;
 
 const GAMES = { poker: Poker, tienlen: TienLen, cangua: CaNgua, typhu: TyPhu };
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -141,8 +150,11 @@ class RoomManager {
       const players = room.players.filter((p) => !p.left);
       if (players.length < G.meta.minPlayers) throw new Error(`${G.meta.name} cần ít nhất ${G.meta.minPlayers} người.`);
       if (players.length > G.meta.maxPlayers) throw new Error(`${G.meta.name} tối đa ${G.meta.maxPlayers} người.`);
+      if (!players.some(isHuman)) throw new Error('Cần ít nhất 1 người chơi thật.');
+      this.clearBots(room);
       room.game = new G(players.map((p) => ({ id: p.id, name: p.name })));
       room.gamePlayers = players.map((p) => p.id);
+      room.botFresh = true;
       this.chatSystem(room, `Bắt đầu ${G.meta.name}! Chúc mọi người vui vẻ 🎉`);
       this.broadcast(room);
       reply(ack, { ok: true });
@@ -150,11 +162,31 @@ class RoomManager {
 
     socket.on('room:stop', guard((_, ack) => {
       const room = this.hostRoom(socket);
+      this.clearBots(room);
       room.game = null;
       room.gamePlayers = [];
       this.chatSystem(room, 'Chủ phòng đã kết thúc ván, quay về phòng chờ.');
       this.broadcast(room);
       reply(ack, { ok: true });
+    }));
+
+    // Thêm máy chơi (Dễ / Vừa / Khó)
+    socket.on('room:addBot', guard(({ level }, ack) => {
+      const room = this.hostRoom(socket);
+      if (room.game) throw new Error('Đang có ván chơi, hãy kết thúc trước khi thêm máy.');
+      if (!Bots.LEVELS[level]) throw new Error('Chế độ máy không hợp lệ.');
+      const G = GAMES[room.gameId];
+      if (room.players.filter((p) => !p.left).length >= G.meta.maxPlayers) throw new Error(`${G.meta.name} tối đa ${G.meta.maxPlayers} người.`);
+      const used = new Set(room.players.map((p) => p.name));
+      const base = BOT_NAMES.find((n) => !used.has('🤖 ' + n)) || 'Máy ' + (room.players.length + 1);
+      const bot = {
+        id: 'bot-' + Math.random().toString(36).slice(2, 9), name: '🤖 ' + base, bot: level,
+        connected: true, left: false, avatar: randomBotAvatar(),
+      };
+      room.players.push(bot);
+      this.chatSystem(room, `${bot.name} (máy ${Bots.LEVELS[level].label}) đã vào bàn.`);
+      this.broadcast(room);
+      reply(ack, { ok: true, id: bot.id });
     }));
 
     socket.on('room:kick', guard(({ playerId }, ack) => {
@@ -205,6 +237,7 @@ class RoomManager {
       if (!room.gamePlayers.includes(socket.data.playerId)) throw new Error('Bạn đang xem, chờ ván sau nhé.');
       const a = { ...action, _host: socket.data.playerId === room.hostId };
       room.game.action(socket.data.playerId, a);
+      room.lastBotAct = null;
       this.runAuto(room);
       this.broadcast(room);
       reply(ack, { ok: true });
@@ -228,7 +261,8 @@ class RoomManager {
       this.broadcast(room);
       // Xoá phòng nếu không còn ai kết nối sau 30 phút
       const cleanup = setTimeout(() => {
-        if (this.rooms.get(code) === room && room.players.every((p) => !p.connected)) {
+        if (this.rooms.get(code) === room && room.players.filter(isHuman).every((p) => !p.connected)) {
+          this.clearBots(room);
           room.players.forEach((p) => this.playerRoom.delete(p.id));
           this.rooms.delete(code);
         }
@@ -298,8 +332,10 @@ class RoomManager {
       room.players = room.players.filter((p) => p.id !== pid);
       this.chatSystem(room, `${pl.name} đã rời phòng.`);
     }
-    const active = room.players.filter((p) => !p.left);
+    const active = room.players.filter((p) => !p.left && isHuman(p));
     if (!active.length) {
+      // Không còn người thật: xoá phòng (kể cả các máy)
+      this.clearBots(room);
       room.players.forEach((p) => this.playerRoom.delete(p.id));
       this.rooms.delete(room.code);
       return;
@@ -335,6 +371,70 @@ class RoomManager {
 
   chatSystem(room, text) { this.pushChat(room, { system: true, text }); }
 
+  // ---------- Máy chơi ----------
+  clearBots(room) {
+    clearTimeout(room.botTimer);
+    room.botTimer = null;
+  }
+
+  /** Nước đi kế tiếp của một máy trong phòng (nếu có). */
+  nextBotMove(room) {
+    if (!room.game) return null;
+    for (const p of room.players) {
+      if (!p.bot || p.left || !room.gamePlayers.includes(p.id)) continue;
+      let a = null;
+      try { a = Bots.decide(room.gameId, room.game, p.id, p.bot); } catch (e) { a = null; }
+      if (a) return { id: p.id, action: a };
+    }
+    return null;
+  }
+
+  /** Thời gian "suy nghĩ" của máy, khớp với animation trên màn hình. */
+  botDelay(room, move) {
+    const t = move.action.type;
+    const jitter = Math.random() * 400;
+    let d;
+    switch (room.gameId) {
+      case 'tienlen': d = 900 + jitter; break;
+      case 'poker': d = t === 'rebuy' ? 500 : 900 + jitter; break;
+      case 'cangua': d = t === 'roll' ? 650 + jitter / 2 : 1450; break; // chờ xúc xắc lăn xong
+      case 'typhu':
+        if (room.lastBotAct === 'roll') d = 2500; // vừa đổ xúc xắc: chờ quân cờ đi xong
+        else if (t === 'roll') d = 800 + jitter;
+        else d = 700 + jitter / 2;
+        break;
+      default: d = 900;
+    }
+    // Người thật đã về đích / đã úp bài: máy đánh nhanh cho xong ván, đỡ phải ngồi chờ
+    const humans = room.game.players.filter((gp) => { const rp = room.players.find((x) => x.id === gp.id); return rp && !rp.bot; });
+    if (room.gameId === 'tienlen' && humans.length && humans.every((h) => h.finished)) d = 380;
+    if (room.gameId === 'poker' && humans.length && humans.every((h) => h.folded || h.chips === 0)) d = 450;
+    if (room.botFresh) { d += 1400; room.botFresh = false; } // chờ chia bài / dựng bàn
+    return d;
+  }
+
+  scheduleBots(room) {
+    if (!room.game || room.botTimer) return;
+    const move = this.nextBotMove(room);
+    if (!move) return;
+    room.botTimer = setTimeout(() => {
+      room.botTimer = null;
+      if (!room.game || !this.rooms.has(room.code)) return;
+      const m = this.nextBotMove(room);
+      if (!m) return;
+      try {
+        room.game.action(m.id, m.action);
+      } catch (e) {
+        // Phòng khi máy tính sai: đi nước an toàn để ván không bị kẹt
+        const safe = autoAction(room.game, m.id);
+        try { if (safe) room.game.action(m.id, safe); else return; } catch (e2) { return; }
+      }
+      room.lastBotAct = m.action.type;
+      this.runAuto(room);
+      this.broadcast(room);
+    }, this.botDelay(room, move));
+  }
+
   broadcast(room) {
     const G = GAMES[room.gameId];
     const base = {
@@ -344,7 +444,7 @@ class RoomManager {
       gameMeta: G.meta,
       playing: !!room.game,
       gamePlayers: room.gamePlayers,
-      players: room.players.map((p) => ({ id: p.id, name: p.name, connected: p.connected, left: p.left, avatar: p.avatar })),
+      players: room.players.map((p) => ({ id: p.id, name: p.name, connected: p.connected, left: p.left, avatar: p.avatar, bot: p.bot || null })),
     };
     for (const s of this.io.sockets.sockets.values()) {
       const pid = s.data.playerId;
@@ -354,6 +454,7 @@ class RoomManager {
         s.emit('game:state', room.game.getState(pid));
       }
     }
+    this.scheduleBots(room);
   }
 }
 

@@ -40,6 +40,17 @@
 
         <div class="divider"><span>hoặc</span></div>
 
+        <h2 class="panel-title">🤖 Chơi với máy</h2>
+        <p class="solo-hint">Không có ai chơi cùng? Chọn game ở trên, chọn độ khó rồi vào chơi ngay — không cần mạng.</p>
+        <div id="level-picker" class="level-picker"></div>
+        <div class="bot-count-row">
+          <span>Số máy cùng bàn</span>
+          <div class="stepper"><button id="bot-minus" type="button" aria-label="Bớt máy">−</button><b id="bot-count">3</b><button id="bot-plus" type="button" aria-label="Thêm máy">+</button></div>
+        </div>
+        <button id="btn-solo" class="btn btn-secondary btn-big">▶ Chơi với máy</button>
+
+        <div class="divider"><span>hoặc</span></div>
+
         <h2 class="panel-title">Vào phòng của bạn bè</h2>
         <div class="join-row">
           <input id="inp-code" maxlength="4" placeholder="MÃ PHÒNG" autocapitalize="characters" autocomplete="off">
@@ -63,7 +74,7 @@
       </div>
 
       <div class="card-panel">
-        <p class="share-hint">Bạn bè mở <b id="share-url"></b> rồi nhập mã phòng ở trên để vào.</p>
+        <p class="share-hint" id="share-hint"></p>
 
         <h2 class="panel-title">Chọn trò chơi</h2>
         <div id="room-game-picker" class="game-picker"></div>
@@ -72,6 +83,12 @@
         <h2 class="panel-title row-title">Người chơi <span id="player-count" class="muted"></span>
           <button id="btn-room-avatar" class="btn btn-ghost btn-small">✏️ Đổi nhân vật</button></h2>
         <ul id="room-players" class="player-list"></ul>
+        <div id="add-bot-row" class="add-bot-row hidden">
+          <span>🤖 Thêm máy:</span>
+          <button class="btn btn-ghost btn-small lv-easy" data-addbot="easy">+ Dễ</button>
+          <button class="btn btn-ghost btn-small lv-medium" data-addbot="medium">+ Vừa</button>
+          <button class="btn btn-ghost btn-small lv-hard" data-addbot="hard">+ Khó</button>
+        </div>
 
         <button id="btn-start" class="btn btn-primary btn-big">Bắt đầu chơi</button>
         <p id="wait-host" class="muted center hidden">Đang chờ chủ phòng bắt đầu…</p>

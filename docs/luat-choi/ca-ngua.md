@@ -50,3 +50,13 @@ Người đầu tiên có 4 ngựa đứng ở các bậc **3, 4, 5, 6** của c
 - Đá ngựa đối thủ đứng gần cửa chuồng của họ là cú đánh đau nhất!
 - Ngựa đứng ngay sau ô xuất quân của đối thủ dễ bị đá khi họ ra quân.
 - Nên đưa ngựa lên bậc cao (6, 5) trước để không chặn đường các con sau.
+
+## 8. Chơi với máy
+
+| Chế độ | Máy chơi thế nào |
+|---|---|
+| 🟢 **Dễ** | Ưu tiên đá ngựa, lên chuồng, ra quân. Còn lại đi khá ngẫu hứng, không để ý ngựa mình có bị đá hay không. |
+| 🟡 **Vừa** | Như Dễ nhưng biết **né chỗ nguy hiểm** (ô mà ngựa đối thủ phía sau có thể đá tới) và kéo ngựa đang bị đe doạ ra chỗ an toàn. |
+| 🔴 **Khó** | Né nguy hiểm kỹ hơn, ưu tiên đá những con đối thủ đã đi xa, đẩy ngựa gần đích về cửa chuồng an toàn. |
+
+Đo bằng 600 trận mỗi cặp: Khó thắng Vừa ~73%, Vừa thắng Dễ ~67%, Khó thắng Dễ ~85%.

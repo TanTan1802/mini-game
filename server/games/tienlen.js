@@ -156,6 +156,7 @@ class TienLen {
     this.phase = 'playing';
     this.lastPlay = null;
     this.passed = new Set();
+    this.played = []; // các lá đã đánh ra trong ván (thông tin công khai — máy "Khó" dùng để đếm bài)
     this.nextPlace = 1;
     this.requiredCard = null;
     this.result = null;
@@ -237,6 +238,7 @@ class TienLen {
     }
     this.requiredCard = null;
     p.hand = p.hand.filter((c) => !cards.includes(c));
+    this.played.push(...cards);
     const sorted = sortCards(cards);
     const chatMsg = beat === 'chat' ? ' 💥 CHẶT!' : '';
     this.lastPlay = { by: p.id, byName: p.name, cards: sorted, combo, label: TYPE_NAMES[combo.type] };

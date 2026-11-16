@@ -29,7 +29,7 @@ fs.mkdirSync(path.join(OUT, 'js', 'vendor'), { recursive: true });
 fs.copyFileSync(peerSrc, path.join(OUT, 'js', 'vendor', 'peerjs.min.js'));
 
 // 3. Bộ máy luật chơi: gói server/rooms.js + server/games/*.js (CommonJS) thành 1 file cho trình duyệt
-const modules = ['rooms', 'games/cards', 'games/tienlen', 'games/poker', 'games/cangua', 'games/typhu'];
+const modules = ['rooms', 'bots', 'games/cards', 'games/tienlen', 'games/poker', 'games/cangua', 'games/typhu'];
 let bundle = `// Tự động tạo từ server/rooms.js và server/games/*.js — đừng sửa tay\n(function () {
   var defs = {}, cache = {};
   function norm(from, req) {

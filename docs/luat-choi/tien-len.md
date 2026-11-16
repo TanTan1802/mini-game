@@ -81,3 +81,15 @@ Ngay khi chia bài (chỉ xét khi đủ 13 lá), nếu ai có một trong các 
 - **💡 Gợi ý** — tự chọn giúp bộ nhỏ nhất chặn được.
 - Lá có **viền vàng** là lá bắt buộc phải đánh ở lượt đầu tiên.
 - Khi ai đó còn 1 lá, bảng của họ hiện **"Báo 1 lá!"**.
+
+## 8. Chơi với máy
+
+| Chế độ | Máy chơi thế nào |
+|---|---|
+| 🟢 **Dễ** | Chặn bằng bộ nhỏ nhất có thể, cầm vòng thì đổ bộ chứa lá nhỏ nhất. Đôi khi nhường vòng. Không giữ heo, không tính xa. |
+| 🟡 **Vừa** | Chọn nước giữ được bài đẹp (không phá sảnh, đôi thông), giữ heo và tứ quý tới khi cần, biết chặt heo. Thỉnh thoảng sơ suất. |
+| 🔴 **Khó** | Như Vừa, cộng thêm **đếm bài** (nhớ các lá đã ra), chặn người sắp hết bài. Cuối ván còn ít lá thì **tính trước hàng chục khả năng** rồi mới đánh. |
+
+Đo bằng cách cho máy đấu với nhau 300 trận mỗi cặp: Khó thắng Vừa ~72%, Vừa thắng Dễ ~74%, Khó thắng Dễ ~85%.
+
+Khi bạn đã về đích, các máy đánh nhanh để kết thúc ván sớm.

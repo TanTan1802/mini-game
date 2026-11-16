@@ -123,10 +123,60 @@
       </button>`).join('');
   }
 
+  // ---------- Chơi với máy ----------
+  const LEVELS = [
+    { id: 'easy', icon: '🟢', name: 'Dễ', tag: 'Làm quen', desc: 'Đi đúng luật, biết chặn bài, đá ngựa, mua đất — nhưng hay liều và không tính xa.' },
+    { id: 'medium', icon: '🟡', name: 'Vừa', tag: 'Thử thách', desc: 'Giữ bài mạnh, tính tỉ lệ thắng, tránh nước nguy hiểm. Thỉnh thoảng vẫn sơ suất.' },
+    { id: 'hard', icon: '🔴', name: 'Khó', tag: 'Cao thủ', desc: 'Đếm bài, tính trước nhiều nước, canh từng sơ hở và dồn vốn rất khôn.' },
+  ];
+  const LEVEL_NAME = Object.fromEntries(LEVELS.map((l) => [l.id, l.name]));
+  const MAX_PLAYERS = { tienlen: 4, poker: 8, cangua: 4, typhu: 6 };
+  const DEFAULT_BOTS = { tienlen: 3, poker: 4, cangua: 3, typhu: 3 };
+  let soloLevel = store.get('vct-level') || 'medium';
+  const botCountFor = (g) => {
+    const v = Number(store.get('vct-bots-' + g)) || DEFAULT_BOTS[g];
+    return Math.max(1, Math.min(MAX_PLAYERS[g] - 1, v));
+  };
+
   function renderHome() {
     $('game-picker').innerHTML = pickerHTML(selectedGame);
     $('btn-avatar').innerHTML = Avatar.svg(myAvatar, { size: 96 });
+    $('level-picker').innerHTML = LEVELS.map((l) => `
+      <button class="level-option lv-${l.id} ${l.id === soloLevel ? 'active' : ''}" data-level="${l.id}">
+        <span class="lv-head"><span class="lv-icon">${l.icon}</span><b>${l.name}</b><small>${l.tag}</small></span>
+        <span class="lv-desc">${l.desc}</span>
+      </button>`).join('');
+    $('bot-count').textContent = botCountFor(selectedGame);
+    $('btn-solo').textContent = `▶ Chơi ${GAME_NAMES[selectedGame]} với ${botCountFor(selectedGame)} máy (${LEVEL_NAME[soloLevel]})`;
   }
+  $('level-picker').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-level]');
+    if (!b) return;
+    soloLevel = b.dataset.level;
+    store.set('vct-level', soloLevel);
+    renderHome();
+  });
+  const stepBots = (d) => { store.set('vct-bots-' + selectedGame, botCountFor(selectedGame) + d); renderHome(); };
+  $('bot-minus').onclick = () => stepBots(-1);
+  $('bot-plus').onclick = () => stepBots(1);
+  $('btn-solo').onclick = async () => {
+    const name = getName();
+    if (!name) return;
+    const btn = $('btn-solo');
+    busy(btn, true, 'Đang dọn bàn…');
+    try {
+      if (P2P) await Net.host({ offline: true });
+      const r = await emit('room:create', { name, game: selectedGame, avatar: myAvatar });
+      if (!r.ok) return;
+      for (let k = 0; k < botCountFor(selectedGame); k++) {
+        const b = await emit('room:addBot', { level: soloLevel });
+        if (!b.ok) return;
+      }
+      await emit('room:start');
+    } catch (e) {
+      UI.toast(e.message || 'Không mở được bàn chơi.', 'error');
+    } finally { busy(btn, false); renderHome(); }
+  };
   $('game-picker').addEventListener('click', (e) => {
     const b = e.target.closest('[data-game]');
     if (!b) return;
@@ -191,6 +241,7 @@
         <span class="avatar-img">${Avatar.svg(p.avatar, { size: 44 })}</span>
         <span class="pl-name">${UI.esc(p.name)}${p.id === playerId ? ' <i class="muted">(bạn)</i>' : ''}</span>
         ${p.id === room.hostId ? '<span class="tag">👑 Chủ phòng</span>' : ''}
+        ${p.bot ? `<span class="tag lv-${p.bot}">Máy ${LEVEL_NAME[p.bot] || ''}</span>` : ''}
         ${p.left ? '<span class="tag gray">Đã rời</span>' : !p.connected ? '<span class="tag gray">Mất kết nối</span>' : ''}
         ${withKick && isHost() && p.id !== playerId ? `<button class="btn btn-ghost btn-small" data-kick="${p.id}">Mời ra</button>` : ''}
       </li>`).join('');
@@ -198,7 +249,12 @@
 
   function renderRoom() {
     $('room-code').textContent = room.code;
-    $('share-url').textContent = P2P ? inviteLink(room.code) : (window.__lanUrl || location.origin);
+    const shareUrl = P2P ? inviteLink(room.code) : (window.__lanUrl || location.origin);
+    const offline = P2P && Net.isOffline();
+    $('share-hint').innerHTML = offline
+      ? '🔒 Bàn chơi một mình với máy (không cần mạng). Muốn mời bạn bè: rời phòng rồi bấm <b>♠ Mở bàn chơi</b>.'
+      : `Bạn bè mở <b id="share-url">${UI.esc(shareUrl)}</b> rồi nhập mã phòng ở trên để vào.`;
+    $('add-bot-row').classList.toggle('hidden', !isHost() || room.playing);
     $('room-game-picker').innerHTML = pickerHTML(room.gameId, !isHost());
     const active = room.players.filter((p) => !p.left).length;
     const meta = room.gameMeta;
@@ -220,8 +276,12 @@
     if (b && confirm('Mời người này ra khỏi phòng?')) emit('room:kick', { playerId: b.dataset.kick });
   });
   $('btn-start').onclick = () => emit('room:start');
+  $('add-bot-row').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-addbot]');
+    if (b) emit('room:addBot', { level: b.dataset.addbot });
+  });
   const leave = async () => {
-    const others = room && room.players.some((p) => p.id !== playerId && !p.left);
+    const others = room && room.players.some((p) => p.id !== playerId && !p.left && !p.bot);
     if (P2P && Net.isHosting() && others) {
       if (!confirm('Bạn là chủ phòng — rời đi sẽ đóng phòng của mọi người. Tiếp tục?')) return;
     } else if (room && room.playing && !confirm('Rời phòng khi đang chơi? Máy sẽ tự đi thay bạn.')) return;

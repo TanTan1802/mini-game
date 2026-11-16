@@ -105,22 +105,28 @@
   let reconnectTimer = null;
   let leaving = false;
 
-  async function host() {
-    if (mode === 'server' || hostState) return;
+  /** Mở bàn. opts.offline: chơi một mình với máy — không cần mạng, không mời được người khác. */
+  async function host(opts = {}) {
+    if (mode === 'server') return;
+    if (hostState && !!hostState.offline === !!opts.offline) return;
     await leave();
-    if (!window.Peer || !window.Engine) throw new Error('Thiếu thư viện kết nối.');
-    let code = null;
-    for (let k = 0; k < 6 && !peer; k++) {
-      code = randomCode();
-      try { peer = await openPeer(PEER_PREFIX + code); } catch (e) { if (e.type !== 'unavailable-id') throw e; }
+    if (!window.Engine || (!opts.offline && !window.Peer)) throw new Error('Thiếu thư viện kết nối.');
+    let code = randomCode();
+    if (!opts.offline) {
+      for (let k = 0; k < 6 && !peer; k++) {
+        code = randomCode();
+        try { peer = await openPeer(PEER_PREFIX + code); } catch (e) { if (e.type !== 'unavailable-id') throw e; }
+      }
+      if (!peer) throw new Error('Không tạo được phòng, thử lại nhé.');
     }
-    if (!peer) throw new Error('Không tạo được phòng, thử lại nhé.');
     const io = new FakeIO();
     const manager = new window.Engine.RoomManager(io, { codeGen: () => code });
-    hostState = { code, io, manager, conns: new Set() };
+    hostState = { code, io, manager, conns: new Set(), offline: !!opts.offline };
     // Chủ phòng tự kết nối vào "server" của mình qua bộ nhớ (giữ thứ tự bằng microtask)
     const local = io.connect((msg) => queueMicrotask(() => client.deliver(msg)));
     client.attach({ send: (msg) => queueMicrotask(() => local.receive(msg)) });
+    store.set('vct-p2p-room', null);
+    if (opts.offline) return code;
     peer.on('connection', (conn) => {
       conn.on('open', () => {
         hostState.conns.add(conn);
@@ -231,6 +237,7 @@
     join,
     leave,
     isHosting: () => !!hostState,
+    isOffline: () => !!(hostState && hostState.offline),
     savedRoom: () => store.get('vct-p2p-room'),
   };
 })();

@@ -877,3 +877,42 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
   .pk-raise input[type=number] { width: 64px; font-size: 14px; }
   .action-bar .btn { padding: 11px 6px; }
 }
+
+/* =========================================================
+   Chơi với máy
+   ========================================================= */
+.solo-hint { margin: -4px 0 10px; color: var(--muted); font-size: 14px; }
+.level-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.level-option {
+  --lc: #2ecc71; display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 12px; cursor: pointer; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .2)); border: 1px solid var(--line); color: var(--ivory);
+  transition: transform .15s, border-color .15s, box-shadow .2s;
+}
+.level-option.lv-medium { --lc: #f2c94c; }
+.level-option.lv-hard { --lc: #e74c3c; }
+.level-option:hover { transform: translateY(-2px); border-color: var(--lc); }
+.level-option.active { border-color: var(--lc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--lc) 45%, transparent), 0 8px 20px color-mix(in srgb, var(--lc) 18%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--lc) 16%, transparent), rgba(0, 0, 0, .2)); }
+.lv-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lv-head b { font-family: var(--serif); font-size: 18px; color: var(--lc); }
+.lv-head small { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-left: auto; }
+.lv-icon { font-size: 16px; }
+.lv-desc { font-size: 12.5px; line-height: 1.4; color: #cfc6b0; }
+.bot-count-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-weight: 700; color: var(--gold); font-size: 14px; }
+.stepper { display: flex; align-items: center; gap: 0; border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; }
+.stepper button { width: 42px; height: 38px; border: none; background: rgba(255, 255, 255, .05); color: var(--gold-hi); font-size: 22px; font-weight: 800; cursor: pointer; }
+.stepper button:hover { background: rgba(212, 175, 55, .15); }
+.stepper b { min-width: 38px; text-align: center; font-size: 18px; font-family: var(--serif); color: var(--ivory); }
+#btn-solo { white-space: normal; }
+.add-bot-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--line-strong); color: var(--gold); font-weight: 700; font-size: 14px; }
+.add-bot-row .btn.lv-easy { color: #7dffb0; border-color: rgba(46, 204, 113, .5); }
+.add-bot-row .btn.lv-medium { color: #ffe08a; border-color: rgba(242, 201, 76, .5); }
+.add-bot-row .btn.lv-hard { color: #ff9b8f; border-color: rgba(231, 76, 60, .5); }
+.tag.lv-easy { background: linear-gradient(180deg, #4ee08e, #1f9d58); color: #04210f; }
+.tag.lv-medium { background: linear-gradient(180deg, #ffe08a, #d4a33a); color: #2a1d00; }
+.tag.lv-hard { background: linear-gradient(180deg, #ff7b6b, #b83224); color: #fff; }
+@media (max-width: 600px) {
+  .level-picker { grid-template-columns: 1fr; gap: 8px; }
+  .level-option { flex-direction: row; align-items: center; padding: 10px 12px; }
+  .lv-head { flex-direction: column; align-items: flex-start; gap: 0; min-width: 76px; }
+  .lv-head small { margin-left: 0; }
+}

@@ -92,3 +92,15 @@ Khi ở tù, tới lượt bạn có thể:
 ## 9. Thẻ Cơ Hội & Vận May
 
 Gồm các thẻ như: tiến tới Xuất Phát, đi tới Hà Nội / Huế, đi tới bến gần nhất (trả **gấp đôi** tiền thuê nếu có chủ), lùi 3 ô, vào tù, thẻ ra tù miễn phí, nhận/trả tiền, sửa nhà (trả theo số nhà và khách sạn), sinh nhật (mỗi người mừng 10), mời mỗi người 50…
+
+## 10. Chơi với máy
+
+| Chế độ | Máy chơi thế nào |
+|---|---|
+| 🟢 **Dễ** | Thích mua đất (mua gần như mọi chỗ còn tiền), xây nhà chậm và chỉ tới 3 nhà, không biết giữ tiền phòng thân. |
+| 🟡 **Vừa** | Giữ tiền dự trữ, luôn mua miếng đất hoàn thành nhóm màu, xây đều khi dư tiền, chuộc đất khi giàu. |
+| 🔴 **Khó** | Đầu ván mua mạnh, **chặn nhóm màu** đối thủ đang gom, dồn vốn xây lên 3 nhà (cầm cố đất lẻ để có tiền xây), cuối ván giữ dự trữ theo tiền thuê nguy hiểm nhất trên bàn. Biết khi nào nên ở lại trong tù. |
+
+Đo bằng 300 trận mỗi cặp (2 người): Khó thắng Vừa ~60%, Vừa thắng Dễ ~62%, Khó thắng Dễ ~73%. Game này phụ thuộc xúc xắc nhiều nên khoảng cách nhỏ hơn các game khác.
+
+Máy đang nợ sẽ tự bán nhà hoặc cầm cố đất, hết cách mới phá sản.

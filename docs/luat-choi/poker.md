@@ -73,3 +73,17 @@ Chip cược mà không ai theo được trả lại cho người cược. Chip 
 - Dùng **thanh trượt** hoặc ô số để chọn mức tố, hoặc bấm nhanh **Tối thiểu / ½ pot / Pot / x3**.
 - Dòng **"Bài của bạn"** cho biết tay bài hiện tại của bạn mạnh tới đâu.
 - Khi lật bài, các lá tạo nên tay thắng được **viền vàng**.
+
+## 8. Chơi với máy
+
+Máy chỉ biết bài của nó và bài chung, không nhìn trộm bài ai. Máy ước lượng cơ hội thắng bằng cách mô phỏng hàng trăm khả năng chia bài, rồi so với số chip phải bỏ ra để theo (pot odds).
+
+| Chế độ | Máy chơi thế nào |
+|---|---|
+| 🟢 **Dễ** | Hay theo cho vui, ít khi tố, hiếm khi lừa. Tính xác suất sơ sài nên dễ bị bắt bài. |
+| 🟡 **Vừa** | Tính xác suất kỹ hơn, chỉ theo khi đáng tiền, tố khi bài mạnh, thỉnh thoảng lừa. |
+| 🔴 **Khó** | Mô phỏng kỹ nhất, chọn mức tố hợp lý theo pot, biết lừa nhiều hơn khi đấu tay đôi ở các vòng sau. |
+
+Đo bằng 60 trận (mỗi trận 40 ván): Khó thắng Vừa ~60%, Vừa thắng Dễ ~82%, Khó thắng Dễ ~83%.
+
+Máy hết chip sẽ tự mua thêm chip để bàn không bị vắng.

@@ -23,6 +23,20 @@ Không cần cài gì, mở link trên điện thoại hoặc máy tính là ch�
 >
 > Một số mạng chặn kết nối ngang hàng (mạng công ty, vài mạng 4G). Nếu không vào được phòng, thử đổi sang Wi-Fi khác, hoặc dùng cách chạy server bên dưới.
 
+### 🤖 Chơi với máy (không cần bạn bè, không cần mạng)
+
+Ở trang chủ, chọn game, chọn độ khó, chọn số máy cùng bàn rồi bấm **▶ Chơi với máy**:
+
+| Chế độ | Dành cho | Máy chơi thế nào |
+|---|---|---|
+| 🟢 **Dễ** | Làm quen | Đi đúng luật, biết chặn bài, đá ngựa, mua đất. Nhưng hay liều và không tính xa. |
+| 🟡 **Vừa** | Thử thách | Giữ bài mạnh, tính tỉ lệ thắng, tránh nước nguy hiểm. Thỉnh thoảng vẫn sơ suất. |
+| 🔴 **Khó** | Cao thủ | Đếm bài, tính trước nhiều nước, canh từng sơ hở và dồn vốn rất khôn. |
+
+Độ khó được đo bằng cách cho các máy đấu với nhau hàng trăm trận (chạy `node test/bot-sim.js`). Máy Khó thắng máy Dễ khoảng 73–85% tuỳ game. Chi tiết từng game nằm trong luật chơi (nút **📖 Luật**).
+
+Có thể **chơi lẫn với bạn bè**: trong phòng chờ, chủ phòng bấm **+ Dễ / + Vừa / + Khó** để thêm máy vào bàn. Máy chỉ biết thông tin công khai và bài của chính nó, không nhìn trộm bài ai.
+
 ### Chơi online bằng server riêng (ổn định hơn)
 
 Muốn phòng không phụ thuộc vào máy chủ phòng, có thể đưa server lên Render (gói miễn phí):
@@ -105,6 +119,8 @@ public/
 docs/luat-choi/     Luật chơi chi tiết (Markdown)
 render.yaml         Cấu hình triển khai lên Render (chơi online)
 scripts/build-pages.js  Tạo bản web tĩnh P2P cho GitHub Pages
+server/bots.js      Máy chơi (AI) 3 chế độ cho cả 4 game
+test/bot-sim.js     Cho máy đấu với nhau để đo độ khó
 public/js/net.js    Lớp kết nối: Socket.io (server) hoặc P2P (PeerJS, chủ phòng chạy luật chơi)
 test/               Test logic: chơi ngẫu nhiên hàng trăm ván để bắt lỗi
 ```
