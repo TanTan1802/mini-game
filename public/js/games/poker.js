@@ -38,7 +38,8 @@
           style="left:${pos.x}%;top:${pos.y}%" data-key="seat-${p.id}" data-anchor="seat-${p.id}">
         <div class="seat-av">${ctx.avatar(p.id, 58)}</div>
         <div class="seat-plate"><span class="seat-name">${winners.has(p.name) ? '🏆 ' : ''}${UI.esc(p.name)}</span>
-          <span class="seat-sub" data-bump="${p.chips}">💰 ${UI.money(p.chips)}</span></div>
+          <span class="seat-sub" data-bump="${p.chips}">💰 ${UI.money(p.chips)}</span>
+          <span class="seat-net ${p.net > 0 ? 'up' : p.net < 0 ? 'down' : ''}" title="Lãi/lỗ so với số chip đã nhận">${p.net > 0 ? '+' : ''}${UI.money(p.net)}</span></div>
         ${cards}
         <div class="seat-badges">${act}</div>
       </div>`;
@@ -73,9 +74,25 @@
     // ---- Bảng của mình ----
     let panel = '';
     if (s.result) {
+      const sign = (x) => `${x > 0 ? '+' : ''}${UI.money(x)}`;
+      const handOf = Object.fromEntries((s.result.hands || []).map((h) => [h.id, h]));
+      const items = (r) => (r.items || []).map((it) => `<span class="${it.pts > 0 ? 'up' : 'down'}">${UI.esc(it.label)} <b>${sign(it.pts)}</b></span>`).join('');
       panel += `<div class="result-box" data-key="res-${s.handNo}" style="width:100%">
-        ${s.result.pots.map((pt) => `<p style="margin:4px 0">🏆 <b>${pt.winners.map(UI.esc).join(', ')}</b> thắng ${pt.label ? UI.esc(pt.label) + ' ' : ''}<b>${UI.money(pt.amount)}</b>${pt.hand ? ` với <b>${UI.esc(pt.hand)}</b>` : ''}</p>`).join('')}
-        ${s.result.hands ? `<table>${s.result.hands.map((h) => `<tr><td>${UI.esc(h.name)}</td><td>${h.hole.map(UI.cardText).join(' ')}</td><td>${UI.esc(h.hand)}</td></tr>`).join('')}</table>` : ''}
+        <h3>Kết quả ván ${s.handNo}</h3>
+        ${s.result.pots.map((pt) => `<p style="margin:2px 0">🏆 <b>${pt.winners.map(UI.esc).join(', ')}</b> thắng ${pt.label ? UI.esc(pt.label) + ' ' : ''}<b>${UI.money(pt.amount)}</b>${pt.hand ? ` với <b>${UI.esc(pt.hand)}</b>` : ''}</p>`).join('')}
+        ${(s.result.bonus || []).map((bn) => `<p class="bonus-line">🎁 Thưởng <b>${UI.esc(bn.hand)}</b> cho ${UI.esc(bn.name)}: mỗi người trả ${UI.money(bn.each)} → <b>+${UI.money(bn.total)}</b></p>`).join('')}
+        <table class="score-table">
+          <thead><tr><th>Người chơi</th><th>Chi tiết</th><th>Ván này</th><th>Lãi/lỗ</th><th>Thắng</th></tr></thead>
+          <tbody>${(s.result.ranking || []).map((r) => `
+            <tr class="${r.id === ctx.me ? 'me' : ''}">
+              <td><b>${UI.esc(r.name)}</b>${handOf[r.id] ? `<div class="hand-note">${handOf[r.id].hole.map(UI.cardText).join(' ')} · ${UI.esc(handOf[r.id].hand)}</div>` : ''}
+                <div class="items items-m">${items(r)}</div></td>
+              <td class="items items-d">${items(r)}</td>
+              <td class="pts ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}">${sign(r.delta)}</td>
+              <td class="pts ${r.net > 0 ? 'up' : r.net < 0 ? 'down' : ''}">${sign(r.net)}</td>
+              <td class="pts">${r.wins}</td>
+            </tr>`).join('')}</tbody>
+        </table>
       </div>`;
     }
     if (me) {
@@ -178,6 +195,10 @@
         });
         const iWon = me && winners.has(me.name);
         const top = s.result.pots[0];
+        (s.result.bonus || []).forEach((bn, k) => setTimeout(() => {
+          FX.banner(`THƯỞNG ${UI.esc(bn.hand.toUpperCase())}!`, { sub: `${UI.esc(bn.name)} +${UI.money(bn.total)}`, duration: 1800 });
+          UI.sfx('coin');
+        }, delay + 2200 + k * 1900));
         setTimeout(() => {
           if (iWon) {
             FX.banner('THẮNG!', { sub: `+${UI.money(potShown)}${top.hand ? ' · ' + UI.esc(top.hand) : ''}` });

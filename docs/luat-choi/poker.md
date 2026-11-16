@@ -68,13 +68,31 @@ Chip cược mà không ai theo được trả lại cho người cược. Chip 
 - Người hết chip có thể bấm **💵 Mua thêm chip** (nhận lại 1.000) khi ván đã kết thúc. Số lần mua thêm được ghi bên cạnh tên để cả bàn cùng biết.
 - Bấm **🃏 Chia ván mới** để bắt đầu ván tiếp theo (bất kỳ ai cũng bấm được).
 
-## 7. Thao tác trong game
+## 7. Tính điểm
+
+**Điểm = lãi/lỗ chip** = số chip đang có − tổng chip đã nhận (1.000 lúc vào bàn + 1.000 mỗi lần mua thêm). Tổng điểm cả bàn luôn bằng 0. Mua thêm chip không làm thay đổi điểm, nên ai mua thêm nhiều lần sẽ thấy rõ mình đang lỗ bao nhiêu.
+
+Cuối mỗi ván có bảng ghi rõ từng khoản của từng người: tiền đã cược, pot thắng được, tiền thưởng. Bảng còn có lãi/lỗ của ván, lãi/lỗ tổng và **số ván đã thắng**. Lãi/lỗ tổng cũng hiện ngay dưới số chip ở mỗi ghế.
+
+### Thưởng tay bài đẹp
+
+Thắng pot khi **lật bài** bằng một trong các tay sau thì **mỗi người còn lại trong ván** (kể cả người đã úp) thưởng thêm:
+
+| Tay bài | Mỗi người thưởng |
+|---|---|
+| Tứ quý | 2 mù lớn (40) |
+| Thùng phá sảnh | 5 mù lớn (100) |
+| Sảnh chúa | 10 mù lớn (200) |
+
+Người không đủ chip thì trả hết số chip đang có. Thắng do mọi người úp bài (không lật bài) thì không có thưởng.
+
+## 8. Thao tác trong game
 
 - Dùng **thanh trượt** hoặc ô số để chọn mức tố, hoặc bấm nhanh **Tối thiểu / ½ pot / Pot / x3**.
 - Dòng **"Bài của bạn"** cho biết tay bài hiện tại của bạn mạnh tới đâu.
 - Khi lật bài, các lá tạo nên tay thắng được **viền vàng**.
 
-## 8. Chơi với máy
+## 9. Chơi với máy
 
 Máy chỉ biết bài của nó và bài chung, không nhìn trộm bài ai. Máy ước lượng cơ hội thắng bằng cách mô phỏng hàng trăm khả năng chia bài, rồi so với số chip phải bỏ ra để theo (pot odds).
 

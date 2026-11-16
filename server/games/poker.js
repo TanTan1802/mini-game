@@ -70,7 +70,7 @@ class Poker {
     this.sb = opts.smallBlind || 10;
     this.bb = this.sb * 2;
     this.players = players.map((p) => ({
-      id: p.id, name: p.name, chips: this.startChips, rebuys: 0,
+      id: p.id, name: p.name, chips: this.startChips, rebuys: 0, wins: 0, items: [], handStart: this.startChips,
       hole: [], bet: 0, total: 0, folded: true, allIn: false, acted: false, raiseLocked: false, lastAction: '',
     }));
     this.dealer = -1;
@@ -104,7 +104,7 @@ class Poker {
     this.deck = shuffle(newDeck(), this.rng);
     this.community = [];
     this.players.forEach((p) => {
-      Object.assign(p, { hole: [], bet: 0, total: 0, folded: p.chips <= 0, allIn: false, acted: false, raiseLocked: false, lastAction: '' });
+      Object.assign(p, { hole: [], bet: 0, total: 0, folded: p.chips <= 0, allIn: false, acted: false, raiseLocked: false, lastAction: '', items: [], handStart: p.chips });
     });
     this.dealer = this.nextSeat(this.dealer < 0 ? this.n() - 1 : this.dealer, (p) => !p.folded);
     const headsUp = eligible.length === 2;
@@ -265,6 +265,8 @@ class Poker {
     this.returnUncalled();
     const pot = this.pot();
     winner.chips += pot;
+    winner.items.push({ label: 'Thắng pot (mọi người úp bài)', pts: pot });
+    winner.wins++;
     this.addLog(`🏆 ${winner.name} thắng ${pot} (mọi người đã úp bài).`);
     this.result = { pots: [{ amount: pot, winners: [winner.name], hand: null }], showCards: false };
     this.finishHand();
@@ -299,8 +301,13 @@ class Poker {
       winners.sort((a, b) => this.seatAfterDealer(a) - this.seatAfterDealer(b));
       const share = Math.floor(pot.amount / winners.length);
       let rem = pot.amount - share * winners.length;
-      winners.forEach((w) => { w.chips += share + (rem > 0 ? 1 : 0); rem--; });
       const label = pots.length > 1 ? (k === 0 ? 'Pot chính' : `Pot phụ ${k}`) : 'Pot';
+      winners.forEach((w) => {
+        const got = share + (rem > 0 ? 1 : 0);
+        rem--;
+        w.chips += got;
+        w.items.push({ label: `Thắng ${label.toLowerCase()} (${w.best.name})`, pts: got });
+      });
       this.addLog(`🏆 ${label} ${pot.amount}: ${winners.map((w) => w.name).join(', ')} thắng với ${winners[0].best.name}.`);
       this.result.pots.push({
         label, amount: pot.amount, winners: winners.map((w) => w.name), hand: winners[0].best.name,
@@ -308,8 +315,38 @@ class Poker {
       });
     });
     this.result.hands = contenders.map((p) => ({ id: p.id, name: p.name, hole: p.hole, hand: p.best.name }));
+    const potWinners = new Set();
+    this.result.pots.forEach((pt) => pt.winners.forEach((nm) => potWinners.add(this.players.find((q) => q.name === nm))));
+    potWinners.forEach((w) => { w.wins++; });
+    // Thưởng tay bài đẹp: thắng khi lật bài bằng Tứ quý / Thùng phá sảnh / Sảnh chúa
+    this.result.bonus = [];
+    potWinners.forEach((w) => {
+      const [cat, top] = w.best.score;
+      const mult = cat === 8 && top === 14 ? 10 : cat === 8 ? 5 : cat === 7 ? 2 : 0;
+      if (!mult) return;
+      const each = mult * this.bb;
+      const label = `Thưởng ${w.best.name}`;
+      let got = 0;
+      this.players.forEach((q) => {
+        if (q === w || !q.hole.length) return;
+        const amt = Math.min(q.chips, each);
+        if (!amt) return;
+        q.chips -= amt;
+        q.items.push({ label: `${label} của ${w.name}`, pts: -amt });
+        got += amt;
+      });
+      if (got) {
+        w.chips += got;
+        w.items.push({ label: `${label} (mỗi người ${each})`, pts: got });
+        this.result.bonus.push({ name: w.name, hand: w.best.name, each, total: got });
+        this.addLog(`🎁 ${w.name} được thưởng ${w.best.name}: mỗi người trả ${each}, tổng ${got}.`);
+      }
+    });
     this.finishHand();
   }
+
+  /** Lãi/lỗ = chip đang có − tổng chip đã nhận (lúc vào + mua thêm) */
+  net(p) { return p.chips - this.startChips * (1 + p.rebuys); }
 
   seatAfterDealer(p) {
     const i = this.players.indexOf(p);
@@ -319,6 +356,11 @@ class Poker {
   finishHand() {
     this.phase = 'handover';
     this.turn = -1;
+    // Bảng điểm ván: tiền cược đã bỏ ra + tiền thắng + thưởng; điểm = lãi/lỗ so với số chip đã nhận
+    this.players.forEach((p) => { if (p.total > 0) p.items.unshift({ label: 'Tiền cược', pts: -p.total }); });
+    this.result.ranking = this.players.filter((p) => p.hole.length || p.items.length).map((p) => ({
+      id: p.id, name: p.name, delta: p.chips - p.handStart, net: this.net(p), wins: p.wins, items: p.items,
+    })).sort((a, b) => b.delta - a.delta);
     const busted = this.players.filter((p) => p.chips === 0 && p.total > 0);
     busted.forEach((p) => this.addLog(`💸 ${p.name} đã hết chip.`));
     this.players.forEach((p) => { p.bet = 0; p.total = 0; p.allIn = false; });
@@ -353,7 +395,7 @@ class Poker {
       turn: this.turn >= 0 && this.players[this.turn] ? this.players[this.turn].id : null,
       players: this.players.map((p, i) => ({
         id: p.id, name: p.name, chips: p.chips, bet: p.bet, folded: p.folded, allIn: p.allIn,
-        lastAction: p.lastAction, rebuys: p.rebuys, cardCount: p.hole.length,
+        lastAction: p.lastAction, rebuys: p.rebuys, cardCount: p.hole.length, net: this.net(p), wins: p.wins,
         dealer: i === this.dealer, sb: i === this.sbSeat, bb: i === this.bbSeat,
         hole: p.id === playerId || (showdown && !p.folded) ? p.hole : null,
       })),

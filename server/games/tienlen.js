@@ -207,7 +207,7 @@ class TienLen {
         this.players.forEach((q) => {
           q.place = q === p ? 1 : 2;
           q.finished = true;
-          if (q !== p) this.transfer(q, p, pay, `Tới trắng (${why})`);
+          if (q !== p) this.transfer(q, p, pay, `${p.name} tới trắng`, `Tới trắng (${why}) — ${q.name} đền`);
         });
         this.lastWinner = p.id;
         this.phase = 'ended';
@@ -288,7 +288,9 @@ class TienLen {
       const stake = chopValue(prev.combo, prev.cards) + (prev.stake || 0);
       this.lastPlay.stake = stake;
       if (victim && stake) {
-        this.transfer(victim, p, stake, `${prev.stake ? 'Chặt chồng' : 'Chặt'} ${prev.label.toLowerCase()} ${prev.cards.map(cardText).join(' ')}`);
+        const what = `${prev.label.toLowerCase()} ${prev.cards.map(cardText).join(' ')}`;
+        const chong = prev.stake ? ' (chặt chồng)' : '';
+        this.transfer(victim, p, stake, `Bị ${p.name} chặt ${what}${chong}`, `Chặt ${what} của ${victim.name}${chong}`);
         this.addLog(`💸 ${victim.name} bị chặt, đền ${stake} điểm cho ${p.name}.`);
       }
     }
@@ -308,7 +310,7 @@ class TienLen {
           q.burned = true;
           q.place = this.lastFree--;
           this.award(q, SCORE_TABLE[n][q.place - 1], `Về ${PLACE_NAMES[q.place - 1]} (cháy)`);
-          this.transfer(q, p, fine, 'Cháy bài — phạt gấp đôi');
+          this.transfer(q, p, fine, 'Cháy bài — phạt gấp đôi', `${q.name} cháy bài`);
           this.addLog(`🔥 ${q.name} bị CHÁY BÀI (chưa đánh được lá nào)!`);
         });
       }
@@ -323,7 +325,7 @@ class TienLen {
           // Thối bài: còn heo / tứ quý / đôi thông trên tay → đền cho người về Nhất
           const winner = this.players.find((q) => q.place === 1);
           for (const it of thoiItems(last.hand)) {
-            this.transfer(last, winner, it.pts, `Thối ${it.what}`);
+            this.transfer(last, winner, it.pts, `Thối ${it.what}`, `${last.name} thối ${it.what}`);
             this.addLog(`💸 ${last.name} thối ${it.what}, đền ${it.pts} điểm.`);
           }
         }
@@ -365,10 +367,11 @@ class TienLen {
   }
 
   /** Chuyển điểm giữa 2 người (tổng cả bàn luôn bằng 0). */
-  transfer(from, to, pts, label) {
+  /** Chuyển điểm giữa 2 người (tổng cả bàn luôn bằng 0); mỗi bên có mô tả riêng theo góc nhìn của mình. */
+  transfer(from, to, pts, labelFrom, labelTo = labelFrom) {
     if (!pts || from === to) return;
-    this.award(from, -pts, label);
-    this.award(to, pts, label);
+    this.award(from, -pts, labelFrom);
+    this.award(to, pts, labelTo);
   }
 
   endGame() {

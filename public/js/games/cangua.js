@@ -28,6 +28,8 @@
   let lastMoveKey = null;
   let prevHorses = null; // { "color-h": horseState }
   let lastPhase = null;
+  let lastRound = null;
+  let prevScores = null;
 
   // Danh sách ô (data-cell) mà ngựa đi qua
   function pathCells(color, from, to) {
@@ -61,6 +63,8 @@
     }
     const walkMs = walk ? walk.delay + STEP_MS * (walk.cells.length - 1) : rolled ? ROLL_MS : 0;
     const kicked = new Set();
+    const newRound = lastRound !== null && s.roundNo !== lastRound;
+    if (newRound) prevHorses = null; // ván mới: ngựa về chuồng không phải bị đá
     if (prevHorses) {
       s.players.forEach((p) => p.horses.forEach((h, i) => {
         const before = prevHorses[`${p.color}-${i}`];
@@ -153,6 +157,7 @@
             ${myTurn && s.phase === 'roll' ? '<button class="btn btn-primary btn-big roll-btn" data-act="roll" data-key="roll">🎲 Đổ xúc xắc</button>'
               : `<div data-key="roll-ph" class="roll-ph">${s.phase === 'ended' ? 'Ván đã kết thúc' : myTurn ? 'Chọn ngựa để đi' : `${UI.esc(turnP.name)} đang chơi…`}</div>`}
           </div>
+          ${s.phase === 'ended' && s.result ? resultHTML(s, ctx) : ''}
           ${myTurn && s.phase === 'move' ? `<div class="action-bar" data-key="moves">${s.movable.map((m) => `<button class="btn btn-secondary btn-small" data-h="${m.h}">Ngựa ${m.h + 1}: ${UI.esc(m.label)}</button>`).join('')}</div>` : ''}
           <div class="cn-players">
             ${s.players.map((p) => `
@@ -161,6 +166,7 @@
                 <b class="grow">${UI.esc(p.name)}${p.id === ctx.me ? ' (bạn)' : ''}</b>
                 <span class="mini-tag">${UI.esc(p.colorName)}</span>
                 <span class="mini-tag gold" data-bump="${p.homeCount}">🏠 ${p.homeCount}/4</span>
+                <span class="cn-score ${p.score > 0 ? 'up' : p.score < 0 ? 'down' : ''}" data-bump="${p.score}">${p.score > 0 ? '+' : ''}${p.score}đ</span>
               </div>`).join('')}
           </div>
           ${me ? `<p class="side-note">Bạn là màu <b>${UI.esc(me.colorName)}</b>. Ô ★ là ô xuất quân, ô viền đậm là cửa chuồng.</p>` : ''}
@@ -188,6 +194,24 @@
       }
     }
 
+    // Điểm thay đổi (đá ngựa, về đích): số bay lên ở dòng người chơi
+    if (prevScores && !newRound) {
+      s.players.forEach((p) => {
+        const d = p.score - (prevScores[p.id] ?? p.score);
+        if (!d) return;
+        const row = root.querySelector(`[data-key="pl-${p.id}"]`);
+        if (!row) return;
+        const f = document.createElement('div');
+        f.className = 'money-float ' + (d > 0 ? 'up' : 'down');
+        f.textContent = `${d > 0 ? '+' : ''}${d} điểm`;
+        f.style.animationDelay = `${walkMs}ms`;
+        f.style.opacity = '0';
+        row.appendChild(f);
+        setTimeout(() => f.remove(), walkMs + 1800);
+      });
+    }
+    prevScores = Object.fromEntries(s.players.map((p) => [p.id, p.score]));
+    lastRound = s.roundNo;
     lastRollId = s.rollId;
     lastMoveKey = moveKey;
     lastPhase = s.phase;
@@ -195,8 +219,28 @@
     s.players.forEach((p) => p.horses.forEach((h, i) => { prevHorses[`${p.color}-${i}`] = h; }));
 
     root.querySelectorAll('[data-h]').forEach((el) => (el.onclick = () => ctx.act({ type: 'move', horse: Number(el.dataset.h) })));
+    const nb = root.querySelector('[data-act="next"]');
+    if (nb) nb.onclick = () => { nb.disabled = true; ctx.act({ type: 'next' }); };
     const rb = root.querySelector('[data-act="roll"]');
     if (rb) rb.onclick = () => { rb.disabled = true; ctx.act({ type: 'roll' }); };
+  }
+
+  function resultHTML(s, ctx) {
+    const sign = (x) => `${x > 0 ? '+' : ''}${x}`;
+    const items = (r) => (r.items || []).map((it) => `<span class="${it.pts > 0 ? 'up' : 'down'}">${UI.esc(it.label)} <b>${sign(it.pts)}</b></span>`).join('');
+    return `<div class="result-box cn-result" data-key="res-${s.roundNo}">
+      <h3>Kết quả ván ${s.roundNo}</h3>
+      <table class="score-table">
+        <thead><tr><th>Người chơi</th><th>Ván này</th><th>Tổng</th></tr></thead>
+        <tbody>${s.result.ranking.map((r) => `
+          <tr class="${r.id === ctx.me ? 'me' : ''}">
+            <td>${r.winner ? '🏆 ' : ''}<b>${UI.esc(r.name)}</b> <span class="muted">🏠 ${r.home}/4</span><div class="items" style="margin-top:4px">${items(r)}</div></td>
+            <td class="pts ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}">${sign(r.delta)}</td>
+            <td class="pts">${sign(r.total)}</td>
+          </tr>`).join('')}</tbody>
+      </table>
+      ${ctx.spectator ? '' : '<button class="btn btn-primary btn-big" data-act="next">🔄 Ván mới</button>'}
+    </div>`;
   }
 
   window.GameViews.cangua = { render };

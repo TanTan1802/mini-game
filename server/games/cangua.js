@@ -23,15 +23,41 @@ class CaNgua {
     const colorSets = { 2: [0, 2], 3: [0, 1, 2], 4: [0, 1, 2, 3] };
     const colors = colorSets[players.length];
     this.players = players.map((p, i) => ({
-      id: p.id, name: p.name, color: colors[i], horses: [-1, -1, -1, -1],
+      id: p.id, name: p.name, color: colors[i], horses: [-1, -1, -1, -1], score: 0, delta: 0, items: [],
     }));
-    this.turn = 0;
+    this.log = [];
+    this.roundNo = 0;
+    this.newRound(0);
+  }
+
+  /** Bắt đầu ván mới (điểm cộng dồn); người thắng ván trước đổ trước. */
+  newRound(first) {
+    this.roundNo++;
+    this.players.forEach((p) => { p.horses = [-1, -1, -1, -1]; p.delta = 0; p.items = []; });
+    this.turn = first;
     this.dice = null;
     this.phase = 'roll';
     this.moves = [];
     this.winner = null;
-    this.log = [`Ván cá ngựa bắt đầu! ${this.players[0].name} (${COLOR_NAMES[this.players[0].color]}) đổ trước.`];
+    this.result = null;
     this.lastMove = null;
+    const p = this.players[first];
+    this.addLog(`— Ván ${this.roundNo} — ${p.name} (${COLOR_NAMES[p.color]}) đổ trước.`);
+  }
+
+  // ---------- Tính điểm (tổng cả bàn luôn bằng 0) ----------
+  award(p, pts, label) {
+    if (!pts) return;
+    p.score += pts;
+    p.delta += pts;
+    p.items.push({ label, pts });
+  }
+
+  /** Chuyển điểm (tổng cả bàn luôn bằng 0); mỗi bên có mô tả riêng theo góc nhìn của mình. */
+  transfer(from, to, pts, labelFrom, labelTo = labelFrom) {
+    if (!pts || from === to) return;
+    this.award(from, -pts, labelFrom);
+    this.award(to, pts, labelTo);
   }
 
   addLog(m) { this.log.push(m); if (this.log.length > 60) this.log.shift(); }
@@ -82,6 +108,11 @@ class CaNgua {
   }
 
   action(playerId, a) {
+    if (a.type === 'next') {
+      if (this.phase !== 'ended') throw new Error('Ván chưa kết thúc.');
+      this.newRound(Math.max(0, this.players.findIndex((q) => q.id === this.winner)));
+      return;
+    }
     if (this.phase === 'ended') throw new Error('Ván đã kết thúc.');
     const p = this.players[this.turn];
     if (!p || p.id !== playerId) throw new Error('Chưa tới lượt bạn.');
@@ -114,8 +145,12 @@ class CaNgua {
   doMove(p, m, auto) {
     const from = p.horses[m.h];
     if (m.kick) {
-      m.kick.player.horses[m.kick.h] = -1;
-      this.addLog(`💥 ${p.name} đá ngựa của ${m.kick.player.name} về chuồng!`);
+      const victim = m.kick.player;
+      const far = victim.horses[m.kick.h] >= 30; // đã đi quá nửa đường
+      victim.horses[m.kick.h] = -1;
+      const pts = far ? 2 : 1;
+      this.transfer(victim, p, pts, `Bị ${p.name} đá ngựa${far ? ' (đã đi quá nửa đường)' : ''}`, `Đá ngựa ${victim.name}${far ? ' (quá nửa đường)' : ''}`);
+      this.addLog(`💥 ${p.name} đá ngựa của ${victim.name} về chuồng! ${victim.name} đền ${pts} điểm.`);
     }
     p.horses[m.h] = m.to;
     this.lastMove = { player: p.id, h: m.h, from, to: m.to };
@@ -125,6 +160,22 @@ class CaNgua {
       this.phase = 'ended';
       this.winner = p.id;
       this.addLog(`🏆 ${p.name} (${COLOR_NAMES[p.color]}) đã đưa đủ 4 ngựa lên chuồng và CHIẾN THẮNG!`);
+      // Người thua đền: 1 + số ngựa chưa lên chuồng; thua trắng (chưa con nào lên chuồng) đền gấp đôi
+      for (const q of this.players) {
+        if (q === p) continue;
+        const home = q.horses.filter((r) => r > 100).length;
+        const base = 1 + (4 - home);
+        const pts = home === 0 ? base * 2 : base;
+        this.transfer(q, p, pts,
+          home === 0 ? 'Thua trắng ×2 (chưa ngựa nào lên chuồng)' : `Thua — còn ${4 - home} ngựa chưa lên chuồng`,
+          home === 0 ? `${q.name} thua trắng ×2` : `${q.name} còn ${4 - home} ngựa ngoài chuồng`);
+      }
+      this.result = {
+        ranking: this.players.map((q) => ({
+          id: q.id, name: q.name, color: q.color, home: q.horses.filter((r) => r > 100).length,
+          delta: q.delta, total: q.score, items: q.items, winner: q === p,
+        })).sort((a, b) => (b.winner - a.winner) || (b.home - a.home) || (b.delta - a.delta)),
+      };
       return;
     }
     this.endMove(p);
@@ -149,11 +200,14 @@ class CaNgua {
       rollId: this.rollId || 0,
       turn: cur ? cur.id : null,
       winner: this.winner,
+      roundNo: this.roundNo,
+      result: this.result,
       lastMove: this.lastMove,
       players: this.players.map((p) => ({
         id: p.id, name: p.name, color: p.color, colorName: COLOR_NAMES[p.color],
         horses: p.horses.map((r) => (r === -1 ? { state: 'base' } : r > 100 ? { state: 'home', step: r - 100 } : { state: 'track', abs: absPos(p.color, r), rel: r })),
         homeCount: p.horses.filter((r) => r > 100).length,
+        score: p.score, delta: p.delta,
       })),
       movable: cur && cur.id === playerId && this.phase === 'move'
         ? this.moves.map((m) => ({

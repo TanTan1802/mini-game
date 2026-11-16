@@ -45,13 +45,28 @@
 
 Người đầu tiên có 4 ngựa đứng ở các bậc **3, 4, 5, 6** của chuồng đích là người **thắng**.
 
-## 7. Mẹo
+## 7. Tính điểm
+
+Điểm cộng dồn qua nhiều ván (bấm **🔄 Ván mới** khi hết ván, người thắng ván trước đổ trước). Tổng điểm cả bàn luôn bằng 0.
+
+| Sự việc | Điểm |
+|---|---|
+| **Đá ngựa** | Người bị đá đền cho người đá **1 điểm** |
+| Đá con ngựa **đã đi quá nửa đường** (từ ô thứ 30 trở đi) | Đền **2 điểm** |
+| **Về đích** | Mỗi người thua đền cho người thắng **1 điểm + 1 điểm cho mỗi ngựa chưa lên chuồng** |
+| **Thua trắng** (chưa có ngựa nào lên chuồng) | Đền **gấp đôi** |
+
+Ví dụ: Lan thắng. Minh có 1 ngựa trên chuồng → đền 1 + 3 = **4**. Hùng chưa có ngựa nào lên chuồng → đền (1 + 4) × 2 = **10**. Lan được +14.
+
+Cuối ván có bảng ghi rõ từng khoản của từng người.
+
+## 8. Mẹo
 
 - Đá ngựa đối thủ đứng gần cửa chuồng của họ là cú đánh đau nhất!
 - Ngựa đứng ngay sau ô xuất quân của đối thủ dễ bị đá khi họ ra quân.
 - Nên đưa ngựa lên bậc cao (6, 5) trước để không chặn đường các con sau.
 
-## 8. Chơi với máy
+## 9. Chơi với máy
 
 | Chế độ | Máy chơi thế nào |
 |---|---|

@@ -311,3 +311,74 @@ test('Tiến lên: điểm cả bàn luôn bằng 0 qua 300 ván chơi bằng m�
     assert.equal(g.phase, 'ended');
   }
 });
+
+// ---------------- Poker: tính điểm ----------------
+test('Poker: thắng bằng tứ quý được mỗi người thưởng 2 mù lớn; các khoản cộng lại = lãi/lỗ ván', () => {
+  const g = new Poker(mkPlayers(3), { rng: seeded(5) });
+  g.players[0].hole = ['AS', 'AH'];
+  g.players[1].hole = ['KS', 'QH'];
+  g.players[2].hole = ['3C', '4D'];
+  // bài chung lần lượt: AD AC 7S | 8H | 2C (deck.pop lấy từ cuối)
+  g.deck = ['5S', '6S', '2C', '8H', '7S', 'AC', 'AD'];
+  let guard = 0;
+  while (g.phase === 'betting' && guard++ < 50) {
+    const p = g.players[g.turn];
+    const o = g.getState(p.id).options;
+    g.action(p.id, o.canCheck ? { type: 'check' } : { type: 'call' });
+  }
+  assert.equal(g.phase, 'handover');
+  assert.equal(g.result.bonus.length, 1);
+  assert.equal(g.result.bonus[0].each, 40);
+  const r = Object.fromEntries(g.result.ranking.map((x) => [x.id, x]));
+  for (const x of g.result.ranking) {
+    assert.equal(x.items.reduce((t, it) => t + it.pts, 0), x.delta, `${x.name}: các khoản phải cộng đúng bằng lãi/lỗ`);
+  }
+  assert.ok(r.p0.items.some((it) => /Thưởng Tứ quý/.test(it.label)));
+  assert.equal(r.p0.delta + r.p1.delta + r.p2.delta, 0, 'tổng cả bàn bằng 0');
+  assert.equal(r.p0.wins, 1);
+  assert.equal(r.p0.net, r.p0.delta, 'ván đầu: lãi/lỗ tổng = lãi/lỗ ván');
+});
+
+// ---------------- Cá ngựa: tính điểm ----------------
+test('Cá ngựa: đá ngựa đã đi quá nửa đường → người bị đá đền 2 điểm', () => {
+  const g = new CaNgua(mkPlayers(2));
+  const [a, b] = g.players;
+  a.horses[0] = 5;
+  b.horses[0] = 37; // màu Vàng: ô tuyệt đối 7, đã đi 37/59 ô
+  g.doMove(a, g.moveFor(a, 0, 2), false);
+  assert.equal(b.horses[0], -1);
+  assert.deepEqual([a.score, b.score], [2, -2]);
+});
+
+test('Cá ngựa: về đích → mỗi người thua đền 1 + số ngựa chưa lên chuồng, thua trắng ×2', () => {
+  const g = new CaNgua(mkPlayers(3));
+  const [a, b, c] = g.players;
+  a.horses = [104, 105, 106, 102];
+  b.horses = [101, -1, -1, 20]; // 1 ngựa trên chuồng → đền 1 + 3 = 4
+  c.horses = [-1, 10, -1, -1]; // thua trắng → đền (1 + 4) × 2 = 10
+  g.doMove(a, g.moveFor(a, 3, 3), false);
+  assert.equal(g.phase, 'ended');
+  assert.deepEqual([a.score, b.score, c.score], [14, -4, -10]);
+  assert.equal(g.result.ranking[0].id, 'p0');
+  g.action('p0', { type: 'next' });
+  assert.equal(g.phase, 'roll');
+  assert.equal(g.roundNo, 2);
+  assert.equal(a.score, 14, 'điểm cộng dồn qua ván mới');
+  assert.ok(g.players.every((p) => p.horses.every((r) => r === -1)));
+});
+
+test('Cá ngựa: 40 ván máy chơi liên tiếp, tổng điểm luôn bằng 0', () => {
+  const Bots = require('../server/bots');
+  for (let k = 0; k < 40; k++) {
+    const g = new CaNgua(mkPlayers(2 + (k % 3)), { rng: seeded(k + 3) });
+    for (let round = 0; round < 2; round++) {
+      let guard = 0;
+      while (g.phase !== 'ended' && guard++ < 20000) {
+        const id = g.players[g.turn].id;
+        g.action(id, Bots.decide('cangua', g, id, 'medium'));
+      }
+      assert.equal(g.players.reduce((t, p) => t + p.score, 0), 0);
+      g.action('p0', { type: 'next' });
+    }
+  }
+});

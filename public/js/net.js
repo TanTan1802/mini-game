@@ -239,5 +239,6 @@
     isHosting: () => !!hostState,
     isOffline: () => !!(hostState && hostState.offline),
     savedRoom: () => store.get('vct-p2p-room'),
+    _debugHost: () => hostState, // dùng cho test tự động
   };
 })();
