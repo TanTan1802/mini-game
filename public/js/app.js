@@ -343,9 +343,12 @@
       const active = draft[aeTab] === i ? 'active' : '';
       if (opt.colors) {
         // lựa chọn màu: hiện luôn nhân vật với màu đó để thấy ngay
-        html += `<button class="ae-opt ${active}" data-val="${i}">${Avatar.svg({ ...draft, [aeTab]: i }, { size: 56 })}<span class="swatch" style="background:${opt.colors[i]}"></span></button>`;
+        const hat = [3, 4, 7].includes(draft.acc) && aeTab === 'hairColor' ? { acc: 0 } : {};
+        html += `<button class="ae-opt ${active}" data-val="${i}">${Avatar.svg({ ...draft, ...hat, [aeTab]: i }, { size: 56 })}<span class="swatch" style="background:${opt.colors[i]}"></span></button>`;
       } else {
-        html += `<button class="ae-opt ${active}" data-val="${i}">${Avatar.svg({ ...draft, [aeTab]: i }, { size: 56 })}<small>${opt.names[i]}</small></button>`;
+        // Xem kiểu tóc: tạm bỏ mũ/nón để thấy rõ khác biệt
+        const hat = [3, 4, 7].includes(draft.acc) && (aeTab === 'hair') ? { acc: 0 } : {};
+        html += `<button class="ae-opt ${active}" data-val="${i}">${Avatar.svg({ ...draft, ...hat, [aeTab]: i }, { size: 56 })}<small>${opt.names[i]}</small></button>`;
       }
     }
     $('ae-options').innerHTML = html;

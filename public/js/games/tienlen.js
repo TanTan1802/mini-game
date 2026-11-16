@@ -72,13 +72,25 @@
     // ---- Bảng của mình ----
     let panel = '';
     if (s.phase === 'ended' && s.result) {
-      const rows = s.result.instantWin
-        ? `<p>🎉 <b>${UI.esc(s.result.instantWin.player)}</b> TỚI TRẮNG với <b>${UI.esc(s.result.instantWin.why)}</b>!</p>`
-        : `<table>${s.result.ranking.map((r) => `<tr><td>${['🥇', '🥈', '🥉', '🐢'][r.place - 1] || r.place}</td><td>${UI.esc(r.name)}</td><td>Hạng ${r.place}</td></tr>`).join('')}</table>`;
-      const scores = s.players.slice().sort((a, b) => b.score - a.score)
-        .map((p) => `${UI.esc(p.name)} <b>${p.score >= 0 ? '+' : ''}${p.score}</b>`).join(' · ');
+      const medal = ['🥇', '🥈', '🥉', '🐢'];
+      const sign = (x) => `${x > 0 ? '+' : ''}${x}`;
+      const ranking = s.result.ranking || [];
+      const itemsHTML = (r) => (r.items || []).map((it) => `<span class="${it.pts > 0 ? 'up' : 'down'}">${UI.esc(it.label)} <b>${sign(it.pts)}</b></span>`).join('');
+      const rows = `
+        ${s.result.instantWin ? `<p>🎉 <b>${UI.esc(s.result.instantWin.player)}</b> TỚI TRẮNG với <b>${UI.esc(s.result.instantWin.why)}</b>!</p>` : ''}
+        <table class="score-table">
+          <thead><tr><th></th><th>Người chơi</th><th>Chi tiết</th><th>Ván này</th><th>Tổng</th></tr></thead>
+          <tbody>${ranking.map((r) => `
+            <tr class="${r.id === ctx.me ? 'me' : ''}">
+              <td>${medal[r.place - 1] || r.place}</td>
+              <td><b>${UI.esc(r.name)}</b>${r.burned ? ' <span class="mini-tag red">🔥 Cháy</span>' : ''}
+                <div class="items items-m">${itemsHTML(r)}</div></td>
+              <td class="items items-d">${itemsHTML(r)}</td>
+              <td class="pts ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}">${sign(r.delta || 0)}</td>
+              <td class="pts">${sign(r.total)}</td>
+            </tr>`).join('')}</tbody>
+        </table>`;
       panel = `<div class="result-box" data-key="result-${s.gameNo}"><h3>Kết quả ván ${s.gameNo}</h3>${rows}
-        <p class="muted">Tổng điểm: ${scores}</p>
         ${ctx.spectator ? '' : '<button class="btn btn-primary btn-big" data-act="next">🔄 Chia ván mới</button>'}</div>`;
     } else if (me) {
       const nCards = s.myHand.length;
@@ -141,7 +153,8 @@
       const lastLog = s.log[s.log.length - 1] || '';
       if (/CHẶT/.test(lastLog)) {
         setTimeout(() => {
-          FX.banner('CHẶT!', { kind: 'red', sub: `${UI.esc(s.lastPlay.byName)} chặt bằng ${UI.esc(s.lastPlay.label)}` });
+          const paid = (s.log.slice().reverse().find((l) => /đền \d+ điểm/.test(l)) || '').match(/đền (\d+) điểm/);
+          FX.banner('CHẶT!', { kind: 'red', sub: `${UI.esc(s.lastPlay.byName)} chặt bằng ${UI.esc(s.lastPlay.label)}${paid ? ` · +${paid[1]} điểm` : ''}` });
           FX.shake(table, 12);
           UI.sfx('boom');
         }, 350);
@@ -164,9 +177,27 @@
       }
     }
 
+    // Điểm thay đổi: số bay lên tại ghế
+    if (prev && !newGame) {
+      s.players.forEach((p) => {
+        const d = p.score - (prev.scores[p.id] ?? p.score);
+        if (!d) return;
+        const plate = root.querySelector(`[data-anchor="seat-${p.id}"] .seat-plate`);
+        if (!plate) return;
+        const f = document.createElement('div');
+        f.className = 'money-float ' + (d > 0 ? 'up' : 'down');
+        f.textContent = `${d > 0 ? '+' : ''}${d} điểm`;
+        plate.appendChild(f);
+        setTimeout(() => f.remove(), 1700);
+        if (p.burned && !prev.burned[p.id]) setTimeout(() => { FX.banner('CHÁY BÀI!', { kind: 'red', sub: `${UI.esc(p.name)} chưa đánh được lá nào`, duration: 1600 }); UI.sfx('bad'); }, 900);
+      });
+    }
+
     prev = {
       gameNo: s.gameNo, playKey, phase: s.phase, lastPlay: s.lastPlay,
       places: Object.fromEntries(s.players.map((p) => [p.id, p.place])),
+      scores: Object.fromEntries(s.players.map((p) => [p.id, p.score])),
+      burned: Object.fromEntries(s.players.map((p) => [p.id, p.burned])),
     };
 
     // ---- Thao tác ----

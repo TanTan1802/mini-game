@@ -156,12 +156,12 @@ function tlClone(game, meId) {
   g.players = game.players.map((p) => {
     let hand = p.hand.slice();
     if (p.id !== meId) { hand = TL.sortCards(unseen.slice(off, off + p.hand.length)); off += p.hand.length; }
-    return { id: p.id, name: p.name, hand, finished: p.finished, place: p.place, score: 0 };
+    return { id: p.id, name: p.name, hand, finished: p.finished, place: p.place, score: 0, delta: 0, items: [], burned: p.burned };
   });
   Object.assign(g, {
     rng: rnd, gameNo: game.gameNo, lastWinner: game.lastWinner, log: [], phase: game.phase, turn: game.turn,
     lastPlay: game.lastPlay ? { ...game.lastPlay } : null, passed: new Set(game.passed), played: game.played.slice(),
-    nextPlace: game.nextPlace, requiredCard: game.requiredCard, result: null,
+    nextPlace: game.nextPlace, lastFree: game.lastFree, requiredCard: game.requiredCard, result: null,
   });
   g.addLog = () => {};
   return g;

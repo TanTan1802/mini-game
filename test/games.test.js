@@ -239,3 +239,75 @@ test('Tỷ phú: xây nhà phải đủ nhóm và xây đều', () => {
   g.action(p.id, { type: 'build', pos: 3 });
   assert.equal(g.rentFor(1, 0), Math.ceil(60 * 0.06) * 5);
 });
+
+// ---------------- Tiến Lên: tính điểm ----------------
+function tlSetup(hands, turn = 0) {
+  const g = new TienLen(mkPlayers(hands.length), { rng: seeded(99) });
+  g.phase = 'playing';
+  g.requiredCard = null;
+  g.lastPlay = null;
+  g.passed = new Set();
+  g.players.forEach((p, i) => { p.hand = hands[i]; p.finished = false; p.place = 0; p.score = 0; p.delta = 0; p.items = []; p.burned = false; });
+  g.nextPlace = 1; g.lastFree = hands.length; g.turn = turn;
+  return g;
+}
+
+test('Tiến lên: chặt heo đỏ bằng 3 đôi thông → người bị chặt đền 3 điểm ngay', () => {
+  const g = tlSetup([['2H', '9S', 'KD'], ['4S', '4H', '5S', '5H', '6S', '6H', 'JD'], ['3S', 'QD'], ['3C', 'QH']]);
+  g.action('p0', { type: 'play', cards: ['2H'] });
+  g.action('p1', { type: 'play', cards: ['4S', '4H', '5S', '5H', '6S', '6H'] });
+  assert.equal(g.players[0].score, -3);
+  assert.equal(g.players[1].score, 3);
+});
+
+test('Tiến lên: chặt chồng → người bị chặt sau cùng đền cả phần trước', () => {
+  const g = tlSetup([['2S', '9S', 'KD'], ['4S', '4H', '5S', '5H', '6S', '6H', 'JD'], ['8S', '8C', '8D', '8H', 'QD'], ['3C', 'QH']]);
+  g.action('p0', { type: 'play', cards: ['2S'] }); // heo đen
+  g.action('p1', { type: 'play', cards: ['4S', '4H', '5S', '5H', '6S', '6H'] }); // p0 đền 2
+  g.action('p2', { type: 'play', cards: ['8S', '8C', '8D', '8H'] }); // p1 đền 3 (đôi thông) + 2 (heo) = 5
+  assert.deepEqual(g.players.map((p) => p.score), [-2, 2 - 5, 5, 0]);
+});
+
+test('Tiến lên: về đích được cộng điểm ngay, bét bị thối heo + tứ quý cho người Nhất', () => {
+  const g = tlSetup([['AS'], ['3S'], ['5S'], ['2D', '7S', '7C', '7D', '7H', '9S']]);
+  g.action('p0', { type: 'play', cards: ['AS'] });
+  assert.equal(g.players[0].score, 3, 'về Nhất được +3 ngay, không chờ hết ván');
+  assert.equal(g.phase, 'playing');
+  g.action('p1', { type: 'pass' });
+  g.action('p2', { type: 'pass' });
+  g.action('p3', { type: 'pass' }); // hết vòng → p1 đánh tự do
+  g.action('p1', { type: 'play', cards: ['3S'] }); // về nhì
+  g.action('p2', { type: 'play', cards: ['5S'] }); // về ba → p3 bét
+  assert.equal(g.phase, 'ended');
+  const [nhat, nhi, ba, bet] = g.players;
+  assert.deepEqual([nhi.score, ba.score], [1, -1]);
+  // bét: −3 (hạng) − 3 (heo ♦) − 4 (tứ quý 7); nhất: +3 + 7
+  assert.equal(bet.score, -3 - 3 - 4);
+  assert.equal(nhat.score, 3 + 7);
+  assert.ok(g.result.ranking.find((r) => r.id === 'p3').items.some((it) => /Thối heo/.test(it.label)));
+});
+
+test('Tiến lên: chưa đánh lá nào khi có người về Nhất → cháy bài, phạt gấp đôi', () => {
+  const full = (k) => ['3S', '4S', '5S', '6S', '7S', '8S', '9S', '10S', 'JS', 'QS', 'KS', 'AS', '2S'].map((c) => c.replace('S', k));
+  const g = tlSetup([['KH'], full('C'), ['3D', '5D'], ['4H', '6H']]);
+  g.action('p0', { type: 'play', cards: ['KH'] });
+  const chay = g.players[1];
+  assert.ok(chay.burned && chay.finished);
+  assert.equal(chay.place, 4, 'người cháy xếp bét');
+  assert.equal(chay.score, -3 - 3, 'bét −3 và phạt cháy thêm −3');
+  assert.equal(g.players[0].score, 3 + 3);
+});
+
+test('Tiến lên: điểm cả bàn luôn bằng 0 qua 300 ván chơi bằng máy', () => {
+  const Bots = require('../server/bots');
+  for (let k = 0; k < 300; k++) {
+    const g = new TienLen(mkPlayers(2 + (k % 3)), { rng: seeded(k + 1) });
+    let guard = 0;
+    while (g.phase === 'playing' && guard++ < 500) {
+      const id = g.players[g.turn].id;
+      g.action(id, Bots.decide('tienlen', g, id, ['easy', 'medium', 'hard'][k % 3]));
+    }
+    assert.equal(g.players.reduce((t, p) => t + p.score, 0), 0, 'ván ' + k);
+    assert.equal(g.phase, 'ended');
+  }
+});

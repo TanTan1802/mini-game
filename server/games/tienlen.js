@@ -126,7 +126,38 @@ function generateCombos(hand) {
   return out;
 }
 
+// Điểm theo hạng (cộng ngay khi về đích)
 const SCORE_TABLE = { 2: [1, -1], 3: [2, 0, -2], 4: [3, 1, -1, -3] };
+const PLACE_NAMES = ['Nhất', 'Nhì', 'Ba', 'Bét'];
+const SUIT_SYM = { S: '♠', C: '♣', D: '♦', H: '♥' };
+const cardText = (c) => c.slice(0, -1) + SUIT_SYM[c.slice(-1)];
+
+/** Điểm của heo: heo đen (♠ ♣) 2, heo đỏ (♦ ♥) 3. */
+const heoPts = (c) => (rankIdx(c) === TWO ? (/[SC]$/.test(c) ? 2 : 3) : 0);
+
+/** Giá trị của bộ bị chặt (người bị chặt phải đền cho người chặt). */
+function chopValue(combo, cards) {
+  if (combo.type === 'single' || combo.type === 'pair') return cards.reduce((t, c) => t + heoPts(c), 0);
+  if (combo.type === 'quad') return 4;
+  if (combo.type === 'dstraight') return combo.pairs >= 4 ? 5 : 3;
+  return 0;
+}
+
+/** Bài "thối" còn trên tay người về bét: heo, tứ quý, đôi thông. */
+function thoiItems(hand) {
+  const items = [];
+  hand.filter((c) => rankIdx(c) === TWO).forEach((c) => items.push({ what: `heo ${cardText(c)}`, pts: heoPts(c) }));
+  const cnt = new Array(13).fill(0);
+  hand.forEach((c) => cnt[rankIdx(c)]++);
+  for (let r = 0; r < 12; r++) if (cnt[r] === 4) { items.push({ what: `tứ quý ${TL_RANKS[r]}`, pts: 4 }); cnt[r] = 0; }
+  let run = 0;
+  for (let r = 0; r <= 12; r++) {
+    if (r < 12 && cnt[r] >= 2) { run++; continue; }
+    if (run >= 3) items.push({ what: `${run} đôi thông`, pts: run >= 4 ? 5 : 3 });
+    run = 0;
+  }
+  return items;
+}
 
 class TienLen {
   static meta = { id: 'tienlen', name: 'Tiến Lên Miền Nam', minPlayers: 2, maxPlayers: 4 };
@@ -152,12 +183,16 @@ class TienLen {
       p.hand = sortCards(deck.slice(i * 13, i * 13 + 13));
       p.finished = false;
       p.place = 0;
+      p.burned = false;
+      p.delta = 0; // điểm được/mất trong ván này
+      p.items = []; // chi tiết từng khoản
     });
     this.phase = 'playing';
     this.lastPlay = null;
     this.passed = new Set();
     this.played = []; // các lá đã đánh ra trong ván (thông tin công khai — máy "Khó" dùng để đếm bài)
     this.nextPlace = 1;
+    this.lastFree = this.players.length; // hạng cuối còn trống (dành cho người bị cháy)
     this.requiredCard = null;
     this.result = null;
     this.addLog(`— Ván ${this.gameNo} bắt đầu —`);
@@ -168,13 +203,16 @@ class TienLen {
       if (why) {
         this.addLog(`🎉 ${p.name} TỚI TRẮNG với ${why}!`);
         const n = this.players.length;
+        const pay = 2 * Math.abs(SCORE_TABLE[n][n - 1]); // mỗi người thua đền gấp đôi bét
         this.players.forEach((q) => {
           q.place = q === p ? 1 : 2;
-          q.score += q === p ? 3 * (n - 1) : -3;
+          q.finished = true;
+          if (q !== p) this.transfer(q, p, pay, `Tới trắng (${why})`);
         });
         this.lastWinner = p.id;
         this.phase = 'ended';
         this.result = { instantWin: { player: p.name, why } };
+        this.endGame();
         return;
       }
     }
@@ -240,20 +278,55 @@ class TienLen {
     p.hand = p.hand.filter((c) => !cards.includes(c));
     this.played.push(...cards);
     const sorted = sortCards(cards);
-    const chatMsg = beat === 'chat' ? ' 💥 CHẶT!' : '';
-    this.lastPlay = { by: p.id, byName: p.name, cards: sorted, combo, label: TYPE_NAMES[combo.type] };
-    this.addLog(`${p.name} đánh ${TYPE_NAMES[combo.type]}: ${sorted.join(' ')}${chatMsg}`);
+    const prev = this.lastPlay;
+    this.lastPlay = { by: p.id, byName: p.name, cards: sorted, combo, label: TYPE_NAMES[combo.type], stake: 0 };
+    this.addLog(`${p.name} đánh ${TYPE_NAMES[combo.type]}: ${sorted.map(cardText).join(' ')}${beat === 'chat' ? ' 💥 CHẶT!' : ''}`);
+
+    // Chặt: người bị chặt đền ngay; chặt chồng thì người bị chặt sau cùng đền cả phần trước
+    if (beat === 'chat') {
+      const victim = this.players.find((q) => q.id === prev.by);
+      const stake = chopValue(prev.combo, prev.cards) + (prev.stake || 0);
+      this.lastPlay.stake = stake;
+      if (victim && stake) {
+        this.transfer(victim, p, stake, `${prev.stake ? 'Chặt chồng' : 'Chặt'} ${prev.label.toLowerCase()} ${prev.cards.map(cardText).join(' ')}`);
+        this.addLog(`💸 ${victim.name} bị chặt, đền ${stake} điểm cho ${p.name}.`);
+      }
+    }
 
     if (p.hand.length === 0) {
+      const n = this.players.length;
       p.finished = true;
       p.place = this.nextPlace++;
-      if (p.place === 1) this.lastWinner = p.id;
-      this.addLog(`🏁 ${p.name} về ${p.place === 1 ? 'NHẤT' : 'hạng ' + p.place}!`);
+      this.award(p, SCORE_TABLE[n][p.place - 1], `Về ${PLACE_NAMES[p.place - 1]}`);
+      this.addLog(`🏁 ${p.name} về ${p.place === 1 ? 'NHẤT' : PLACE_NAMES[p.place - 1].toLowerCase()}!`);
+      if (p.place === 1) {
+        this.lastWinner = p.id;
+        // Cháy bài: ai chưa đánh lá nào thì dừng, xếp cuối, bị phạt gấp đôi
+        const fine = Math.abs(SCORE_TABLE[n][n - 1]);
+        this.players.filter((q) => !q.finished && q.hand.length === 13).forEach((q) => {
+          q.finished = true;
+          q.burned = true;
+          q.place = this.lastFree--;
+          this.award(q, SCORE_TABLE[n][q.place - 1], `Về ${PLACE_NAMES[q.place - 1]} (cháy)`);
+          this.transfer(q, p, fine, 'Cháy bài — phạt gấp đôi');
+          this.addLog(`🔥 ${q.name} bị CHÁY BÀI (chưa đánh được lá nào)!`);
+        });
+      }
       const left = this.players.filter((q) => !q.finished);
-      if (left.length === 1) {
-        left[0].finished = true;
-        left[0].place = this.nextPlace++;
-        this.addLog(`${left[0].name} về bét.`);
+      if (left.length <= 1) {
+        if (left.length === 1) {
+          const last = left[0];
+          last.finished = true;
+          last.place = this.nextPlace++;
+          this.award(last, SCORE_TABLE[n][last.place - 1], `Về ${PLACE_NAMES[last.place - 1]}`);
+          this.addLog(`${last.name} về bét.`);
+          // Thối bài: còn heo / tứ quý / đôi thông trên tay → đền cho người về Nhất
+          const winner = this.players.find((q) => q.place === 1);
+          for (const it of thoiItems(last.hand)) {
+            this.transfer(last, winner, it.pts, `Thối ${it.what}`);
+            this.addLog(`💸 ${last.name} thối ${it.what}, đền ${it.pts} điểm.`);
+          }
+        }
         this.endGame();
         return;
       }
@@ -283,12 +356,28 @@ class TienLen {
     this.turn = j;
   }
 
+  /** Cộng/trừ điểm kèm lý do (hiện trong bảng kết quả). */
+  award(p, pts, label) {
+    if (!pts) return;
+    p.score += pts;
+    p.delta = (p.delta || 0) + pts;
+    (p.items = p.items || []).push({ label, pts });
+  }
+
+  /** Chuyển điểm giữa 2 người (tổng cả bàn luôn bằng 0). */
+  transfer(from, to, pts, label) {
+    if (!pts || from === to) return;
+    this.award(from, -pts, label);
+    this.award(to, pts, label);
+  }
+
   endGame() {
     this.phase = 'ended';
-    const table = SCORE_TABLE[this.players.length];
-    this.players.forEach((p) => (p.score += table[p.place - 1]));
     this.result = {
-      ranking: this.players.slice().sort((a, b) => a.place - b.place).map((p) => ({ name: p.name, place: p.place })),
+      ...(this.result || {}),
+      ranking: this.players.slice().sort((a, b) => a.place - b.place).map((p) => ({
+        id: p.id, name: p.name, place: p.place, burned: p.burned, delta: p.delta, total: p.score, items: p.items,
+      })),
     };
   }
 
@@ -318,7 +407,7 @@ class TienLen {
       requiredCard: me && this.players[this.turn] && this.players[this.turn].id === me.id ? this.requiredCard : null,
       players: this.players.map((p) => ({
         id: p.id, name: p.name, count: p.hand.length, finished: p.finished, place: p.place,
-        score: p.score, passed: this.passed.has(p.id),
+        score: p.score, delta: p.delta || 0, burned: !!p.burned, passed: this.passed.has(p.id),
         // Lật bài khi ván kết thúc
         hand: this.phase === 'ended' ? p.hand : undefined,
       })),

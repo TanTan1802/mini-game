@@ -64,15 +64,43 @@ Ngay khi chia bài (chỉ xét khi đủ 13 lá), nếu ai có một trong các 
 
 ## 6. Tính điểm
 
+Điểm được cộng/trừ **ngay khi sự việc xảy ra** và cộng dồn qua các ván. Tổng điểm cả bàn luôn bằng 0: ai được bao nhiêu thì người khác mất bấy nhiêu. Cuối ván có bảng ghi rõ từng khoản.
+
+### Điểm theo hạng (cộng ngay khi về đích)
+
 | Số người | Nhất | Nhì | Ba | Bét |
 |---|---|---|---|---|
 | 4 | +3 | +1 | −1 | −3 |
 | 3 | +2 | 0 | −2 | |
 | 2 | +1 | −1 | | |
 
-**Tới trắng:** người tới trắng được +3 từ mỗi người còn lại (mỗi người −3).
+### Giá trị các bộ "nặng"
 
-Điểm được cộng dồn qua các ván trong cùng một lượt chơi.
+| Bộ | Điểm |
+|---|---|
+| Heo đen (2♠, 2♣) | 2 mỗi lá |
+| Heo đỏ (2♦, 2♥) | 3 mỗi lá |
+| 3 đôi thông | 3 |
+| Tứ quý | 4 |
+| 4 đôi thông | 5 |
+
+### Chặt heo — đền ngay
+
+Ai bị chặt thì **đền ngay** cho người chặt đúng giá trị bộ bị chặt. Ví dụ: đánh heo ♥ bị chặt bằng 3 đôi thông → đền 3 điểm.
+
+**Chặt chồng:** nếu người vừa chặt lại bị chặt tiếp, người bị chặt sau cùng phải **đền cả phần trước**. Ví dụ: A đánh heo ♠ (2), B chặt bằng 3 đôi thông (A đền B 2), C chặt B bằng tứ quý → B đền C 3 + 2 = **5**.
+
+### Thối bài
+
+Người về **bét** mà trên tay còn heo, tứ quý hoặc đôi thông thì bị **thối**: đền giá trị các bộ đó cho người về **Nhất**.
+
+### Cháy bài
+
+Khi đã có người về Nhất mà ai **chưa đánh ra được lá nào** thì bị **cháy**: người đó dừng chơi, xếp cuối bảng, và **bị phạt gấp đôi**: ngoài điểm hạng còn đền thêm cho người Nhất số điểm bằng mức thua của hạng bét.
+
+### Tới trắng
+
+Người tới trắng thắng ngay. Mỗi người còn lại đền cho họ **gấp đôi** mức thua của hạng bét (4 người: mỗi người −6).
 
 ## 7. Thao tác trong game
 

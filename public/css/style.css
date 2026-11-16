@@ -916,3 +916,21 @@ body[data-game="typhu"] #screen-game { background: radial-gradient(ellipse at 50
   .lv-head { flex-direction: column; align-items: flex-start; gap: 0; min-width: 76px; }
   .lv-head small { margin-left: 0; }
 }
+
+/* Bảng điểm Tiến Lên */
+.score-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.score-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; }
+.score-table td, .score-table th { padding: 7px 6px; border-bottom: 1px solid rgba(212, 175, 55, .15); text-align: left; vertical-align: top; }
+.score-table tr.me td { background: rgba(212, 175, 55, .08); }
+.score-table .items { display: flex; flex-wrap: wrap; gap: 4px; }
+.score-table .items span { font-size: 12px; padding: 1px 7px; border-radius: 99px; background: rgba(255, 255, 255, .06); white-space: nowrap; }
+.score-table .items span.up b, .score-table .pts.up { color: #7dff9e; }
+.score-table .items span.down b, .score-table .pts.down { color: #ff8a80; }
+.score-table .pts { font-family: var(--serif); font-weight: 900; font-size: 16px; text-align: right; white-space: nowrap; }
+.seat-plate { position: relative; }
+.seat-plate .money-float { left: -20px; right: -20px; top: -8px; text-align: center; font-size: 16px; white-space: nowrap; }
+.score-table .items-m { display: none; margin-top: 4px; }
+@media (max-width: 600px) {
+  .score-table th:nth-child(3), .score-table td.items-d { display: none; }
+  .score-table .items-m { display: flex; }
+}
